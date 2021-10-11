@@ -126,18 +126,33 @@ def simulation(simulator_path : str, simulation_dir : str, num : str, inp_data :
     print("thread"+num+":complete")
     return var
 
-def judge(dataframe : pd.DataFrame):
-    """  data の形は
-    time     1    2    3
-    1.00e-5  .    .    .
-    1.01e-5  .    .    .
-    1.02e-5  .    .    .
-    .        .    .    .
+
+def judge(data : pd.DataFrame, judge_squid : dict):
+    """  dataframe の形は
+    time     P(1)  P(2)   P(3)  P(4)
+    1.00e-5   .     .      .     .
+    1.01e-5   .     .      .     .
+    1.02e-5   .     .      .     .
+    .         .     .      .     .
     """
+
+    """  judge_squid の形は
+    [{'1': 'P(1)', '2': 'P(2)'}, {'1': 'P(3)', '2': 'P(4)'}, {'1': 'P(5)', '2': 'P(6)'}]
+    """
+
+    column = [ i['1']+i['2'] for i in judge_squid ]
+    print(column)
+    newDataframe = pd.DataFrame()
     p = math.pi
-    for column_name, line in dataframe.iteritems():
-        for index, item in line.items():
-            print(f"Index : {index}, Value : {item}")
+    # for column_name, item in data.iteritems():
+        # for index_se, value in row.items():
+
+
+        
+        # for index, item in line.items():
+            # print(f"Index : {index}, Value : {item}")
+    
+    
 
     
 
@@ -172,14 +187,15 @@ if __name__ == '__main__':
 
     # print(df)
 
-    
-
     df['result'] = np.nan
 
-    for index_df, row in df.iterrows():
-        for index_se, value in row.items():
-            print(f"Index : {index_se}, Value : {value}")
-            
+    judge(df,squids)
+    # print(df)
+    
+
+
+        
+
     # print(df)
 
 
