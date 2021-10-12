@@ -9,6 +9,8 @@ from subprocess import PIPE
 import io
 import numpy as np
 import math
+
+from pandas.core.series import Series
         
 def isint(s):  # 正規表現を使って判定を行う
     p = '[-+]?\d+'
@@ -56,8 +58,9 @@ def get_variable(input : str) -> list:
                 print(lead_str+"<変数>=(<default>;<start>;<stop>;<step>)")
                 sys.exit()
     # 取得結果の表示
-    print("variable data -------------------------------------------")
+    print("\033[34mvariable data\033[0m")
     print(var)
+    print("\n")
     return var
 
 def get_judge_spuid(input : str) -> list:
@@ -75,8 +78,9 @@ def get_judge_spuid(input : str) -> list:
             print(subdata)
             sys.exit()
     # 取得結果の表示
-    print("judge squid data -------------------------------------------")
+    print("\033[34mjudge squid data\033[0m")
     print(squids)
+    print("\n")
     return squids
 
 
@@ -98,7 +102,7 @@ def cut_josim_data(raw : str) -> str:
         print(raw)
         sys.exit()
 
-def simulation(simulator_path : str, simulation_dir : str, num : str, inp_data : str, var : pd.DataFrame, judge_squid : list) -> pd.DataFrame:
+def simulation3(simulator_path : str, simulation_dir : str, num : str, inp_data : str, var : pd.DataFrame, judge_squid : list) -> pd.DataFrame:
 
     return_list = []
 
@@ -129,7 +133,7 @@ def simulation(simulator_path : str, simulation_dir : str, num : str, inp_data :
     return var
 
 
-def judge(data : pd.DataFrame, judge_squid : dict) -> pd.DataFrame:
+def judge(data : pd.DataFrame, judge_squid : list) -> pd.DataFrame:
 
     p = math.pi *2
 
@@ -155,8 +159,31 @@ def judge(data : pd.DataFrame, judge_squid : dict) -> pd.DataFrame:
     resultframe.reset_index(drop=True,inplace=True)
     return resultframe
     
-    
 
+def simulation(input : str, data : pd.Series, filepath : str) -> pd.DataFrame:
+    new_file = input
+    for index, value in data.iteritems():
+        new_file = re.sub('#\('+index+'\)',value,new_file)
+    
+    with open(filepath, mode="w") as f:
+        f.write(new_file)
+
+    result = subprocess.run(["josim-cli", filepath, "-V", "1"], stdout=PIPE, stderr=PIPE, text=True)
+    split_data = cut_josim_data(result.stdout)
+    return pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
+
+def thread_simulation(input :str, df : pd.DataFrame, filepath :str, judge_squid : list, default_data : pd.DataFrame):
+    df['result'] = np.nan
+
+def get_default_data(input : str, filepath : str, dic_data : list, judge_squid : list) -> pd.DataFrame:
+    print("Simulation of default value")
+
+    srs = pd.Series(index=[ str(d['char']) for d in dic_data ], data=[ str(d['default']) for d in dic_data ])
+    result = simulation(input, srs, filepath)
+    os.remove(filepath)
+    return judge(result,judge_squid)
+
+    
 
 
 if __name__ == '__main__':
@@ -177,55 +204,15 @@ if __name__ == '__main__':
     for v in variables:
         vlist.append({'char':v['char'],'value':mkNumList(v['start'],v['stop'],v['step'],v['digit'])})
     
-    
 
     colum = [d.get('char') for d in vlist]
-
     contents = [list(tup) for tup in itertools.product(*[d.get('value') for d in vlist])]
-
     df = pd.DataFrame(contents,columns=colum)
 
     print("-------------------------------------------")
     print(df)
     print("-------------------------------------------")
 
-
-    df['result'] = np.nan
-
-    # judge(sim_result,squids)
-    # print(df)
     
-    # print(df)
+    print(get_default_data(raw, dir+'/def.inp', variables, squids))
 
-
-"""
-    new_file = raw
-    for v in variables:
-        new_file = re.sub('#\('+v['char']+'\)',str(v['start']),new_file)
-
-    with open(dir+'/create.inp', mode="w") as f:
-        f.write(new_file)
-"""
-
-
-
-"""
-for m in re.finditer('#\(\w+\)',hole):
-    data = m.group()
-    print(data)"""
-
-# print(hole)
-"""
-for m in re.finditer('#\(.*\)',hole):
-    data = m.group()
-    data_list = re.split(';',re.sub('#|\(|\)','',data))
-    """
-    # print(makelist(data_list))
-    
-
-# with open('test2.inp', mode='w') as f:
-#     f.write(hole)
-
-
-
-# #(2.7;3.5;0.1)

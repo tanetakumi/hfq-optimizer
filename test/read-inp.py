@@ -127,30 +127,30 @@ def simulation(simulator_path : str, simulation_dir : str, num : str, inp_data :
     return var
 
 
-def judge(data : pd.DataFrame, judge_squid : dict):
-    """  dataframe の形は
-    time     P(1)  P(2)   P(3)  P(4)
-    1.00e-5   .     .      .     .
-    1.01e-5   .     .      .     .
-    1.02e-5   .     .      .     .
-    .         .     .      .     .
-    """
+def judge(data : pd.DataFrame, judge_squid : dict) -> pd.DataFrame:
 
-    """  judge_squid の形は
-    [{'1': 'P(1)', '2': 'P(2)'}, {'1': 'P(3)', '2': 'P(4)'}, {'1': 'P(5)', '2': 'P(6)'}]
-    """
+    p = math.pi *2
 
-    column = [ i['1']+i['2'] for i in judge_squid ]
-    print(column)
     newDataframe = pd.DataFrame()
-    p = math.pi
-    # for column_name, item in data.iteritems():
-        # for index_se, value in row.items():
+    for di in judge_squid:
+        newDataframe[di['1']+di['2']] = data[di['1']]+data[di['2']]
+    # print(newDataframe)
 
+    resultframe = pd.DataFrame(columns=['time', 'element', 'phase'])
+    for column_name, srs in newDataframe.iteritems():
+        flag = 0
+        for i in range(len(srs)-1):
+            if (srs.iat[i] - (flag+1)*p) * (srs.iat[i+1] - (flag+1)*p) < 0:
+                flag = flag + 1
+                resultframe = resultframe.append({'time':srs.index[i], 'element':column_name, 'phase':flag},ignore_index=True)
 
-        
-        # for index, item in line.items():
-            # print(f"Index : {index}, Value : {item}")
+            elif (srs.iat[i] - (flag-1)*p) * (srs.iat[i+1] - (flag-1)*p) < 0:
+                flag = flag - 1
+                resultframe = resultframe.append({'time':srs.index[i], 'element':column_name, 'phase':flag},ignore_index=True)
+
+    resultframe.sort_values('time',inplace=True)
+    resultframe.reset_index(drop=True,inplace=True)
+    return resultframe
     
     
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     for v in variables:
         vlist.append({'char':v['char'],'value':mkNumList(v['start'],v['stop'],v['step'],v['digit'])})
     
-    print(vlist)
+    
 
     colum = [d.get('char') for d in vlist]
 
@@ -185,11 +185,14 @@ if __name__ == '__main__':
 
     df = pd.DataFrame(contents,columns=colum)
 
-    # print(df)
+    print("-------------------------------------------")
+    print(df)
+    print("-------------------------------------------")
+
 
     df['result'] = np.nan
 
-    judge(df,squids)
+    # judge(sim_result,squids)
     # print(df)
     
 
