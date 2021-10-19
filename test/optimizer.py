@@ -1,4 +1,3 @@
-import csv
 import re
 import itertools
 import os
@@ -7,10 +6,9 @@ import pandas as pd
 import subprocess
 from subprocess import PIPE
 import io
-import numpy as np
 import math
+import concurrent.futures
 
-from pandas.core.series import Series
         
 def isint(s):  # 正規表現を使って判定を行う
     p = '[-+]?\d+'
@@ -26,7 +24,21 @@ def digit(s):  # 正規表現を使って小数点以下の桁数
     else:
         return 0
 
-def get_variable(input : str) -> list:
+def variables_to_dataframe(var_list : list) -> pd.DataFrame:
+    # 変数辞書->変数リスト変換
+    vlist = []
+    for v in variables:
+        vlist.append({'char':v['char'],'value':mkNumList(v['start'],v['stop'],v['step'],v['digit'])})
+    # 変数リスト変換->変数Dataframe
+    colum = [d.get('char') for d in vlist]
+    contents = [list(tup) for tup in itertools.product(*[d.get('value') for d in vlist])]
+    df = pd.DataFrame(contents,columns=colum)
+    print("======== variable value dataframe ========")
+    print(df)
+    return df
+
+
+def get_variables(input : str) -> list:
 
     # 変数の前につける先頭文字(正規表現)
     lead_str = '\*v\*'
@@ -102,35 +114,6 @@ def cut_josim_data(raw : str) -> str:
         print(raw)
         sys.exit()
 
-def simulation3(simulator_path : str, simulation_dir : str, num : str, inp_data : str, var : pd.DataFrame, judge_squid : list) -> pd.DataFrame:
-
-    return_list = []
-
-    simulation_file = simulation_dir + "/sim" + num + ".inp"
-
-    var['result'] = np.NaN
-    
-    for index_df, row in var.iterrows():
-        new_file = inp_data
-        for index_se, value in row.items():
-            if index_se != 'result':
-                new_file = re.sub('#\('+index_se+'\)',value,new_file)
-        
-        with open(simulation_file, mode="w") as f:
-            f.write(new_file)
-            
-        result = subprocess.run([simulator_path, simulation_file,"-V", "1"], stdout=PIPE, stderr=PIPE, text=True)
-        split_data = cut_josim_data(result.stdout)
-        result_data = pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
-
-        for d in judge_squid:
-            print("Hwllo")
-        # judge = judge_frame(result_data)
-        # row['result'] = judge()
-
-    os.remove(simulation_file)
-    print("thread"+num+":complete")
-    return var
 
 
 def judge(data : pd.DataFrame, judge_squid : list) -> pd.DataFrame:
@@ -172,8 +155,23 @@ def simulation(input : str, data : pd.Series, filepath : str) -> pd.DataFrame:
     split_data = cut_josim_data(result.stdout)
     return pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
 
-def thread_simulation(input :str, df : pd.DataFrame, filepath :str, judge_squid : list, default_data : pd.DataFrame):
-    df['result'] = np.nan
+
+
+def thread_simulation(input :str, df : pd.DataFrame, filepath :str, judge_squid : list, default_data : pd.DataFrame, thread_num : int):
+    print("thread"+str(thread_num)+":start")
+    res_bool = []
+    for index, srs in df.iterrows():
+        sim_data = simulation(input, srs, filepath)
+        shift_data = judge(sim_data, judge_squid)
+        res_bool.append(compareDataframe(shift_data,default_data))
+    
+    df = df.assign(result = res_bool)
+    print("thread"+str(thread_num)+":complete")
+    os.remove(filepath)
+    return df
+
+    
+        
 
 def get_default_data(input : str, filepath : str, dic_data : list, judge_squid : list) -> pd.DataFrame:
     print("Simulation of default value")
@@ -183,36 +181,86 @@ def get_default_data(input : str, filepath : str, dic_data : list, judge_squid :
     os.remove(filepath)
     return judge(result,judge_squid)
 
-    
+
+def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame) -> bool:
+    return df1.drop('time', axis=1).equals(df2.drop('time', axis=1))
 
 
+def split_dataframe(df, k):
+    dfs = [df.loc[i:i+k-1, :] for i in range(0, len(df), k)]
+    return dfs
+
+
+
+
+# 引数で入力するのは　python optimizer.py simulation_file output_file
 if __name__ == '__main__':
-    print('getcwd:      ', os.getcwd())
-    print('dirname:     ', os.path.dirname(__file__))
-    
-    dir = os.path.dirname(__file__)
+    dir = os.getcwd()
+    print('\033[31mcurrent dir:\t\t\033[0m', dir)
+    print('\033[31mdir of this py program:\t\033[0m', os.path.dirname(__file__))
 
-    with open(dir+'/test.inp','r') as f:
+    # confirm argument --------------------------
+    if len(sys.argv) != 3:
+        print("\033[31m[ERROR]\033[0m Wrong number of arguments for the function.")
+        sys.exit()
+
+    if os.path.exists(sys.argv[1]):
+        print("\033[31msimulation file:\033[0m\t",sys.argv[1])
+    else:
+        print("\033[31m[ERROR]\033[0m file not exist:\t",sys.argv[1])
+        sys.exit()
+
+    print("\033[31moutput file:\033[0m\t\t",sys.argv[2])
+    if os.path.exists(sys.argv[2]):
+        val = input('すでにファイルが存在しています。上書きしますか？[y/n]: ')
+        if val == "y":
+            os.remove(sys.argv[2])
+            print("上書き")
+        else:
+            print("他のファイルを入力してください。プログラムを終了します。")
+            sys.exit()
+
+    # confirm argument --------------------------
+
+    sim_dir = dir + "/hfq-optimizer-sim"
+    os.mkdir(sim_dir)
+
+    # 読み込み
+    with open(sys.argv[1],'r') as f:
         raw = f.read()
 
-    # 変数部分取得
-    variables = get_variable(raw)
+    
     # 判定するSQUID部分取得
     squids = get_judge_spuid(raw)
-    # 変数辞書->リスト変換
-    vlist = []
-    for v in variables:
-        vlist.append({'char':v['char'],'value':mkNumList(v['start'],v['stop'],v['step'],v['digit'])})
-    
 
-    colum = [d.get('char') for d in vlist]
-    contents = [list(tup) for tup in itertools.product(*[d.get('value') for d in vlist])]
-    df = pd.DataFrame(contents,columns=colum)
+    # 変数部分取得
+    variables = get_variables(raw)
+    # list dataframe 変換
+    df = variables_to_dataframe(variables)
+    # 変数Dataframeの分割
+    dfs = split_dataframe(df,20)
 
-    print("-------------------------------------------")
-    print(df)
-    print("-------------------------------------------")
+    # default データの取得
+    default_data = get_default_data(raw, sim_dir+'/def.inp', variables, squids)
 
     
-    print(get_default_data(raw, dir+'/def.inp', variables, squids))
+
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+    futures = []
+    
+    for i, dataf in enumerate(dfs):
+        future = executor.submit(thread_simulation, raw, dataf, sim_dir+'/tmp'+str(i)+'.inp', squids, default_data, i)
+        futures.append(future)
+
+    # 各futureの完了を待ち、結果を取得。
+    # as_completed()は、与えられたfuturesの要素を完了順にたどるイテレータを返す。
+    # 完了したタスクが無い場合は、ひとつ完了するまでブロックされる。
+    for future in concurrent.futures.as_completed(futures):
+        result_df = future.result()
+        result_df.to_csv(dir + '/out_a.csv', mode='a', header=False, index=False)
+    # すべてのタスクの完了を待ち、後始末をする。
+    # 完了していないタスクがあればブロックされる。
+    # (上でas_completedをすべてイテレートしているので、実際にはこの時点で完了していないタスクは無いはず。)
+    executor.shutdown()
+    os.rmdir(sim_dir)
 
