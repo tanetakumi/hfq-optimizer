@@ -8,6 +8,7 @@ from subprocess import PIPE
 import io
 import math
 import concurrent.futures
+import csv
 
         
 def isint(s):  # 正規表現を使って判定を行う
@@ -27,7 +28,7 @@ def digit(s):  # 正規表現を使って小数点以下の桁数
 def variables_to_dataframe(var_list : list) -> pd.DataFrame:
     # 変数辞書->変数リスト変換
     vlist = []
-    for v in variables:
+    for v in var_list:
         vlist.append({'char':v['char'],'value':mkNumList(v['start'],v['stop'],v['step'],v['digit'])})
     # 変数リスト変換->変数Dataframe
     colum = [d.get('char') for d in vlist]
@@ -196,6 +197,8 @@ def split_dataframe(df, k):
 # 引数で入力するのは　python optimizer.py simulation_file output_file
 if __name__ == '__main__':
     dir = os.getcwd()
+    sim_dir = dir + "/hfq-optimizer-sim"
+
     print('\033[31mcurrent dir:\t\t\033[0m', dir)
     print('\033[31mdir of this py program:\t\033[0m', os.path.dirname(__file__))
 
@@ -209,21 +212,20 @@ if __name__ == '__main__':
     else:
         print("\033[31m[ERROR]\033[0m file not exist:\t",sys.argv[1])
         sys.exit()
-
-    print("\033[31moutput file:\033[0m\t\t",sys.argv[2])
-    if os.path.exists(sys.argv[2]):
-        val = input('すでにファイルが存在しています。上書きしますか？[y/n]: ')
-        if val == "y":
-            os.remove(sys.argv[2])
-            print("上書き")
+    output_filepath = sys.argv[2]
+    print("\033[31moutput file:\033[0m\t\t",output_filepath)
+    if os.path.exists(output_filepath):
+        if input('すでにファイルが存在しています。上書きしますか？[y/n]: ') == "y":
+            os.remove(output_filepath)
+            print("上書きします。")
         else:
             print("他のファイルを入力してください。プログラムを終了します。")
             sys.exit()
 
     # confirm argument --------------------------
-
-    sim_dir = dir + "/hfq-optimizer-sim"
-    os.mkdir(sim_dir)
+    # フォルダーの作成
+    if not os.path.exists(sim_dir):
+        os.mkdir(sim_dir)
 
     # 読み込み
     with open(sys.argv[1],'r') as f:
@@ -238,13 +240,19 @@ if __name__ == '__main__':
     # list dataframe 変換
     df = variables_to_dataframe(variables)
     # 変数Dataframeの分割
-    dfs = split_dataframe(df,20)
+    dfs = split_dataframe(df,10)
 
     # default データの取得
     default_data = get_default_data(raw, sim_dir+'/def.inp', variables, squids)
 
-    
+    with open(output_filepath, 'w') as f:
+        writer = csv.writer(f)
+        header = [vl['char'] for vl in variables]
+        header.append('result')
+        writer.writerow(header)
 
+
+    
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
     futures = []
     
@@ -257,10 +265,12 @@ if __name__ == '__main__':
     # 完了したタスクが無い場合は、ひとつ完了するまでブロックされる。
     for future in concurrent.futures.as_completed(futures):
         result_df = future.result()
-        result_df.to_csv(dir + '/out_a.csv', mode='a', header=False, index=False)
+        result_df.to_csv(output_filepath, mode='a', header=False, index=False)
     # すべてのタスクの完了を待ち、後始末をする。
     # 完了していないタスクがあればブロックされる。
     # (上でas_completedをすべてイテレートしているので、実際にはこの時点で完了していないタスクは無いはず。)
     executor.shutdown()
+    
+    # フォルダーの削除
     os.rmdir(sim_dir)
 

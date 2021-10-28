@@ -137,11 +137,20 @@ Vb                     100   0 pwl(0ps 0mV 100ps 3.2mV)
 *v*Vbias=(3.2;2;4;0.1)
 
 **netlis file
-.tran 1.0ps 6000ps 0ps 1ps
+.tran 0.1ps 6000ps 0ps 1ps
 
 *.file OUT
 
-.print devv Rin|X0
-*.print devv Vin|X0
-*.print devv Rin|X0
+.print phase  B1|X2|X0
+.print phase  B2|X2|X0
+
+.print phase  B1|X1|X1
+.print phase  B2|X1|X1
+
+.print phase  B1|X2|X1
+.print phase  B2|X2|X1
+
+.print phase  B1|X1|X5
+.print phase  B2|X1|X5
+
 .end

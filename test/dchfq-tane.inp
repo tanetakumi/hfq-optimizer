@@ -1,5 +1,7 @@
 .model jjmod jj(Rtype=1, Vg=2.8mV, Cap=0.064pF, R0=100ohm, Rn=16ohm, Icrit=0.1mA)
 
+
+*PYSQUID=========================================================================
 .subckt psquid        3  5 
 L1                 3         1   1.75pH fcheck
 L2                 3         4   1.75pH fcheck
@@ -43,31 +45,19 @@ R2                 2         5   15.88ohm
 Q2                 4         2  jjmod area=20
 R3                 4         2   0.2ohm
 .ends
+*================================================================================
 
-.subckt HFQ_bias         1  3  4
+
+.subckt HFQ_bias            1  3  4
 L1               1        2   20pH fcheck
 L2               2        3   20pH fcheck
 R1               2        4   130ohm
 .ends
 
-.subckt HFQ_bias1         1  3  
+.subckt HFQ_bias_non        1  3  
 L1               1        2   20pH fcheck
 L2               2        3   20pH fcheck
 .ends
-
-
-
-.subckt HFQ_bias3         1  3  4
-L1               1        2   7pH fcheck
-L2               2        3   7pH fcheck
-R1               2        4   130ohm
-.ends
-
-.subckt HFQ_bias4         1  3  
-L1               1        2   7pH fcheck
-L2               2        3   7pH fcheck
-.ends
-
 
 
 .subckt DCHFQ 1 8 100
@@ -86,13 +76,21 @@ X4       psquid         5  0
 X5       psquid         6  0
 X6       psquid         7  0
 
-X11      HFQ_bias1      3  4
-X12      HFQ_bias       4  5  100
-X13      HFQ_bias1      5  6
-X14      HFQ_bias       6  7  100
-X15      HFQ_bias1      7  8
+X11      HFQ_bias_non      3  4
+X12      HFQ_bias          4  5  100
+X13      HFQ_bias_non      5  6
+X14      HFQ_bias          6  7  100
+X15      HFQ_bias_non      7  8
 
 R1               100      33  150ohm
+.ends
+
+
+.subckt JTL 1 5 100
+X1       psquid         1  0
+X12      HFQ_bias       1  2  100
+X2       psquid         2  0
+X23      HFQ_bias_non   2  3
 .ends
 
 
