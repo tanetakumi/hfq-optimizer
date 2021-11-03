@@ -37,6 +37,7 @@ def cut_josim_data(raw : str) -> str:
 def simulation(filepath : str) -> pd.DataFrame:
 
     result = subprocess.run(["josim-cli", filepath, "-V", "1"], stdout=PIPE, stderr=PIPE, text=True)
+    print(result.stderr)
     split_data = cut_josim_data(result.stdout)
     return pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
 

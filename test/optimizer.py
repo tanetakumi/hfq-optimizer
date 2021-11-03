@@ -153,6 +153,7 @@ def simulation(input : str, data : pd.Series, filepath : str) -> pd.DataFrame:
         f.write(new_file)
 
     result = subprocess.run(["josim-cli", filepath, "-V", "1"], stdout=PIPE, stderr=PIPE, text=True)
+    # print(result.stdout)
     split_data = cut_josim_data(result.stdout)
     return pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
 
@@ -253,7 +254,7 @@ if __name__ == '__main__':
 
 
     
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
     futures = []
     
     for i, dataf in enumerate(dfs):

@@ -60,49 +60,53 @@ L2               2        3   20pH fcheck
 .ends
 
 
-.subckt DCHFQ 1 8 100
-Vin                1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
-Rin                1        20   1050ohm
-L01                20       2    2pH fcheck
-L0                 2        0    42pH fcheck
-L1                 2        21   2pH fcheck
-X1       psquid    21       22
-L3                 22       33   2.00pH fcheck
-L4                 33       3    2.00pH fcheck
-X2       psquid2   3        0
-
-X3       psquid         4  0
-X4       psquid         5  0
-X5       psquid         6  0
-X6       psquid         7  0
-
-X11      HFQ_bias_non      3  4
-X12      HFQ_bias          4  5  100
-X13      HFQ_bias_non      5  6
-X14      HFQ_bias          6  7  100
-X15      HFQ_bias_non      7  8
-
-R1               100      33  150ohm
+.subckt DCHFQ 1 10 100
+Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
+Rin                     1        2    50ohm
+L0                      2        3    2pH fcheck
+L1                      3        0    4pH fcheck
+X1       psquid         3        4
+L3                      4        5    4.00pH fcheck
+L4                      5        6    2.00pH fcheck
+R1                      100      5    100ohm
+X2       psquid         6        0
+X3       DCHFQ_JTL      6        7     100
+X4       DCHFQ_JTL      7        8     100
+X5       DCHFQ_JTL      8        9     100
+X6       DCHFQ_JTL      9        10    100
 .ends
 
 
-.subckt JTL 1 5 100
-X1       psquid         1  0
-X12      HFQ_bias       1  2  100
-X2       psquid         2  0
-X23      HFQ_bias_non   2  3
+.subckt DCHFQ_JTL     1  5  100
+L1               1  2   18pH fcheck
+L2               2  3   18pH fcheck
+L3               3  4   18pH fcheck
+L4               4  5   18pH fcheck
+X1    psquid     3  0
+X2    psquid     5  0
+R1               100  4   50ohm
 .ends
 
+.subckt JTL     1  5  200
+L1               1  2   #(L)pH fcheck
+L2               2  3   #(L)pH fcheck
+L3               3  4   #(L)pH fcheck
+L4               4  5   #(L)pH fcheck
+X1    psquid     3  0
+X2    psquid     5  0
+R1               200  4   #(R)ohm
+.ends
 
-.subckt JTL4 1 5 100
-X1       psquid         1  0
-X12      HFQ_bias3    1  2  100
-X2       psquid         2  0
-X23      HFQ_bias4    2  3
-X3       psquid         3  0
-X34      HFQ_bias3    3  4  100
-X4       psquid         4  0
-X45      HFQ_bias4    4  5
+*v*R=(50;10;100;10)
+
+*v*L=(18;5;30;5)
+
+
+.subckt JTL4    1  5  200
+X1       JTL            1  2  200
+X2       JTL            2  3  200
+X3       JTL            3  4  200
+X4       JTL            4  5  200
 .ends
 
 
@@ -119,27 +123,37 @@ L3       5 6 60pH fcheck
 L4       6 7 30pH fcheck
 L5       7 8 30pH fcheck
 X5       psquid      8 0
-X50      HFQ_bias1   8 9 100
+*X50      HFQ_bias1   8 9 100
 R1       100 6 300ohm
 .ends
 
 *** top cell: 
-X0       DCHFQ         1  2 100
-X1       JTL4          2  7 100
-X5       JTL4          7  8 100
-X6       psquid        8  0
-R1                     8  9      8.32ohm
-L1                     9  0      2pH fcheck
+X0       DCHFQ         1     2  100
+X1       JTL4          2     3  200
+X2       JTL4          3     4  200
+X3       psquid        4     0
+R1                     4     5  8.32ohm
+L1                     5     0  2pH fcheck
+Vb                     100   0  pwl(0ps 0mV 100ps 1.2mV)
+Vb2                    200   0  pwl(0ps 0mV 100ps #(Vbias)mV)
 
-Vb                     100   0 pwl(0ps 0mV 100ps 3.2mV)
-*v*Vbias=(3.2;2;4;0.1)
+
+*v*Vbias=(1.2;0.4;2.0;0.2)
 
 **netlis file
 .tran 1.0ps 6000ps 0ps 1ps
 
-*.file OUT
 
-.print devv Rin|X0
-*.print devv Vin|X0
-*.print devv Rin|X0
+.print phase B1|X1|X3|X0
+.print phase B2|X1|X3|X0
+
+.print phase B1|X1|X5|X0
+.print phase B2|X1|X5|X0
+
+.print phase B1|X1|X1|X1
+.print phase B2|X1|X1|X1
+
+.print phase B1|X1|X1|X2
+.print phase B2|X1|X1|X2
+
 .end
