@@ -16,13 +16,13 @@ def order(filepath : str, index_list : list, bias : str):
 
     new.sort_values("count",inplace=True)
     new.reset_index(inplace=True,drop=True)
-    new.to_csv(re.sub('.','_order.',filepath), mode='w',index= False)
+    new.to_csv(filepath.replace('.','_order.'), mode='w',index= False)
 
 if __name__ == '__main__':
 
     index_list = ["L","R"]
     bias = "Vbias"
-    filepath = "/home/tanetakumi/main/hfq-optimizer/result/vv1.csv"
+    filepath = "/home/tane/main/hfq-optimizer/result/vv2.csv"
 
     order(filepath,index_list,bias)
     # print(df)

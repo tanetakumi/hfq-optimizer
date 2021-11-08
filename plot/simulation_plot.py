@@ -31,7 +31,6 @@ def cut_josim_data(raw : str) -> str:
         return first_split[1]
     else:
         print("\033[31m[ERROR] シュミレーションされませんでした。\033[0m")
-        print(raw)
         sys.exit()
 
 def simulation(filepath : str) -> pd.DataFrame:

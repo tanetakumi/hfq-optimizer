@@ -110,9 +110,21 @@ X4       JTL            4  5  200
 .ends
 
 
-.subckt DFF 5 1 9 100
-X1       psquid      1 0
-X2       psquid      2 0
+.subckt DFF 1 7 12 100
+L1                   1  2  10pH fcheck  
+X1       psquid      2  3
+L2                   3  7  18pH fcheck
+
+L3                   4  5  18pH fcheck
+L4                   5  6  18pH fcheck
+X2       psquid      6  0
+L5                   6  7  2pH  fcheck
+R1                   100  7  100ohm
+L6                   7  8  20pH fcheck
+L7                   8  9  10pH fcheck
+X2       psquid      9  0
+
+
 *R0      100 1 230ohm
 X12      HFQ_bias    1 2 100
 L1       2 3  5pH fcheck

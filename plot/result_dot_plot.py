@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     f = [
-        '/home/tanetakumi/main/hfq-optimizer/lval2.csv', '/home/tanetakumi/main/hfq-optimizer/lval3.csv'
+        '/home/tane/main/hfq-optimizer/result/lval2.csv', '/home/tane/main/hfq-optimizer/result/lval3.csv'
     ]
     vertical = 'L'
     horizontal = 'Vbias'
