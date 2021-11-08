@@ -1,4 +1,3 @@
-
 import re
 import os
 import sys
@@ -16,7 +15,6 @@ import matplotlib.pyplot as plt
 def get_judge_registance(input : str) ->tuple:
     registance = []
     raw = input
-    # 改行が一回だけ、すなわち連続されて記述されている(.print phase <要素>)の部分を取得
     for m in re.finditer('\.print\s+devw\s+.+\n',input,re.IGNORECASE):
         rawdata = m.group()
         # print(rawdata)
@@ -75,6 +73,7 @@ def simulation(input : str, data : pd.Series, filepath : str) -> pd.DataFrame:
         f.write(new_file)
 
     result = subprocess.run(["josim-cli", filepath, "-V", "1"], stdout=PIPE, stderr=PIPE, text=True)
+    print(result.stderr)
     split_data = cut_josim_data(result.stdout)
     return pd.read_csv(io.StringIO(split_data),index_col=0,header=0)
 
@@ -147,10 +146,12 @@ if __name__ == '__main__':
     print(tup[0])
     for w in tup[0]:
         w = w.upper()
-        new_df['W('+w+')'] = df['V('+w+')'] * df['I('+w+')']
+        new_df['W('+w+')'] = (df['V('+w+')'] * df['I('+w+')']).abs()*0.2*10**(-12)
     print(new_df)
 
     os.remove(filepath)
+
+    print(new_df.sum())
 
     new_df.plot()
     plt.show()

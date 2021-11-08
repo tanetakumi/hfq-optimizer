@@ -1,9 +1,6 @@
 import numpy as np
 import math
-import random 
-
-t1 = [i/100 for i in range(628)]
-t2 = [i/100 for i in range(628)]
+import random
 
 def func(t1,t2,licp):
     a = (t1+t2)/2
@@ -22,4 +19,5 @@ if __name__ == "__main__":
         res = func(t1,t2,L*Ic/phi)
         if res > vmin:
             vmin = res
-    print(vmin*Ic)
+    print("nominal ic")        
+    print('{:.8f}'.format(vmin*Ic))

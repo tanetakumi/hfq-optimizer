@@ -88,22 +88,22 @@ X2    psquid     5  0
 R1               100  4   50ohm
 .ends
 
-.subckt JTL     1  5  100
+.subckt JTL     1  5  200
 L1               1  2   18pH fcheck
 L2               2  3   18pH fcheck
 L3               3  4   18pH fcheck
 L4               4  5   18pH fcheck
 X1    psquid     3  0
 X2    psquid     5  0
-R1               100  4   50ohm
+R1               200  4   50ohm
 .ends
 
 
-.subckt JTL4    1  5  100
-X1       JTL            1  2  100
-X2       JTL            2  3  100
-X3       JTL            3  4  100
-X4       JTL            4  5  100
+.subckt JTL4    1  5  200
+X1       JTL            1  2  200
+X2       JTL            2  3  200
+X3       JTL            3  4  200
+X4       JTL            4  5  200
 .ends
 
 
@@ -126,26 +126,31 @@ R1       100 6 300ohm
 
 *** top cell: 
 X0       DCHFQ         1     2  100
-X1       JTL4          2     3  100
-X2       JTL4          3     4  100
+X1       JTL4          2     3  200
+X2       JTL4          3     4  200
 X3       psquid        4     0
 R1                     4     5  8.32ohm
 L1                     5     0  2pH fcheck
 Vb                     100   0  pwl(0ps 0mV 100ps 1.2mV)
+Vb2                    200   0  pwl(0ps 0mV 100ps 0.6mV)
 
 
 *v*Vbias=(1.2;0.3;1.3;0.02)
 
 **netlis file
-.tran 0.2ps 350ps 250ps 0.2ps
+.tran 1.0ps 6000ps 0ps 1ps
 
 
-.print devw B1|X1|X1|X1
+.print phase B1|X1|X3|X0
+.print phase B2|X1|X3|X0
 
-.print devw B2|X1|X1|X1
+.print phase B1|X1|X5|X0
+.print phase B2|X1|X5|X0
 
-.print devw R1|X1|X1|X1
+.print phase B1|X1|X1|X1
+.print phase B2|X1|X1|X1
 
-.print devw R2|X1|X1|X1
+.print phase B1|X1|X1|X2
+.print phase B2|X1|X1|X2
 
 .end
