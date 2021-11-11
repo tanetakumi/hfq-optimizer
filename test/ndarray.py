@@ -10,7 +10,7 @@ def func(x,y,exphi,licphi):
     a = random.randint(0, 1)
     return a*2*math.cos(x)*math.sin(math.pi*(exphi-licphi*math.sin(x)*math.cos(y)))
 
-res = np.arange(5000,dtype=np.float64).reshape(50, 100)
+resl = np.arange(5000,dtype=np.float64).reshape(50, 100)
 
 for a in range(100):
     licp = a/100

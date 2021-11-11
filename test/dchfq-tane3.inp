@@ -123,20 +123,6 @@ R1                   100  7  100ohm
 L6                   7  8  20pH fcheck
 L7                   8  9  10pH fcheck
 X2       psquid      9  0
-
-
-*R0      100 1 230ohm
-X12      HFQ_bias    1 2 100
-L1       2 3  5pH fcheck
-X3       psquid      4 3
-L2       4 7  5pH fcheck
-X4       psquid      5 0
-L3       5 6 60pH fcheck
-L4       6 7 30pH fcheck
-L5       7 8 30pH fcheck
-X5       psquid      8 0
-*X50      HFQ_bias1   8 9 100
-R1       100 6 300ohm
 .ends
 
 *** top cell: 

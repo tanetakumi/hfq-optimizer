@@ -22,11 +22,11 @@ def f2d(t1,Y,licp):
 
 
 
-def Newton(t2,phiex,n,licp,init,err):
+def Newton(t2,licp,init,err):
     x_n=init
     x_n_scc=0
     count=0
-    Y=f1(t2,phiex,n,licp)
+    Y=f1(t2,licp)
     print(Y)
     """
     while True:
