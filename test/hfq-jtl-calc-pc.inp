@@ -2,7 +2,6 @@
 
 
 *PYSQUID=========================================================================
-
 .subckt psquid        3  5 
 L1                 3         1   1.75pH fcheck
 L2                 3         4   1.75pH fcheck
@@ -62,7 +61,7 @@ L2               2        3   20pH fcheck
 
 
 .subckt DCHFQ 1 10 100
-Vin                     1     0      PWL(0ps 0mV   360ps 0mV 370ps 25mV 470ps 25mV 480ps 0mV   860ps 0mV 870ps 25mV 970ps 25mV 980ps 0mV   1360ps 0mV 1370ps 25mV 1470ps 25mV 1480ps 0mV)
+Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
 Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
 L1                      3        0    4pH fcheck
@@ -77,21 +76,7 @@ X5       DCHFQ_JTL      8        9     100
 X6       DCHFQ_JTL      9        10    100
 .ends
 
-.subckt DCHFQt 1 10 100
-Rin                     1        2    50ohm
-L0                      2        3    2pH fcheck
-L1                      3        0    4pH fcheck
-X1       psquid         3        4
-L3                      4        5    4.00pH fcheck
-L4                      5        6    2.00pH fcheck
-R1                      100      5    100ohm
-X2       psquid         6        0
-X3       DCHFQ_JTL      6        7     100
-X4       DCHFQ_JTL      7        8     100
-X5       DCHFQ_JTL      8        9     100
-X6       DCHFQ_JTL      9        10    100
-.ends
-
+*v*L=(4;1;10;0.5)
 
 .subckt DCHFQ_JTL     1  5  100
 L1               1  2   18pH fcheck
@@ -100,81 +85,72 @@ L3               3  4   18pH fcheck
 L4               4  5   18pH fcheck
 X1    psquid     3  0
 X2    psquid     5  0
-R1               100  4   100ohm
+R1               100  4   50ohm
 .ends
 
-.subckt JTL     1  5  100
+.subckt JTL     1  5  200
 L1               1  2   18pH fcheck
 L2               2  3   18pH fcheck
 L3               3  4   18pH fcheck
 L4               4  5   18pH fcheck
 X1    psquid     3  0
 X2    psquid     5  0
-R1               100  4   100ohm
-.ends
-
-*v*R=(50;80;110;5)
-
-*v*L=(18;3;20;3)
-
-
-.subckt JTL4    1  5  100
-X1       JTL            1  2  100
-X2       JTL            2  3  100
-X3       JTL            3  4  100
-X4       JTL            4  5  100
+R1               200  4   50ohm
 .ends
 
 
-.subckt DFF 1 4 9 100
-L1                   1  2  10pH fcheck  
-X1       psquid      2  3
-L2                   3  7  18pH fcheck
+.subckt JTL4    1  5  200
+X1       JTL            1  2  200
+X2       JTL            2  3  200
+X3       JTL            3  4  200
+X4       JTL            4  5  200
+.ends
 
-L3                   4  5  18pH fcheck
-L4                   5  6  18pH fcheck
-X2       psquid      6  0
-L5                   6  7  2pH  fcheck
-R1                   100  7  200ohm
-L6                   7  8  20pH fcheck
-L7                   8  9  10pH fcheck
-X3       psquid      9  0
+
+.subckt DFF 5 1 9 100
+X1       psquid      1 0
+X2       psquid      2 0
+*R0      100 1 230ohm
+X12      HFQ_bias    1 2 100
+L1       2 3  5pH fcheck
+X3       psquid      4 3
+L2       4 7  5pH fcheck
+X4       psquid      5 0
+L3       5 6 60pH fcheck
+L4       6 7 30pH fcheck
+L5       7 8 30pH fcheck
+X5       psquid      8 0
+*X50      HFQ_bias1   8 9 100
+R1       100 6 300ohm
 .ends
 
 *** top cell: 
-Vin1                     1     0      PWL(0ps 0mV   360ps 0mV 370ps 25mV 470ps 25mV 480ps 0mV   860ps 0mV 870ps 25mV 970ps 25mV 980ps 0mV   1360ps 0mV 1370ps 25mV 1470ps 25mV 1480ps 0mV)
-X0       DCHFQt        1     2  100
-X1       JTL4          2     3  100
-X2       JTL4          3     4  100
-
-Vin2                     5     0      PWL(0ps 0mV   240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV   740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV   1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
-X3       DCHFQt        5     6  100
-X4       JTL4          6     7  100
-X5       JTL4          7     8  100
-
-X6       DFF           4     8  9 100
-X7       JTL4          9     10  100
-X8       JTL4          10    11  100
+X0       DCHFQ         1     2  100
+X1       JTL4          2     3  200
+X2       JTL4          3     4  200
+X3       psquid        4     0
+R1                     4     5  8.32ohm
+L1                     5     0  2pH fcheck
+Vb                     100   0  pwl(0ps 0mV 100ps 1.2mV)
+Vb2                    200   0  pwl(0ps 0mV 100ps 0.6mV)
 
 
-X9       psquid        11     0
-R1                     11    12  8.32ohm
-L1                     12     0  2pH fcheck
-Vb                     100    0  pwl(0ps 0mV 100ps 1.9mV)
-
-
-*v*Vbias=(1.2;0.8;1.2;0.05)
+*v*Vbias=(1.2;0.3;1.3;0.02)
 
 **netlis file
-.tran 1.0ps 6000ps 0ps 1ps
+.tran 0.2ps 400ps 320ps 0.2ps
 
-.print phase B1|X1|X1|X4
-.print phase B2|X1|X1|X4
 
-.print phase B1|X1|X1|X2
-.print phase B2|X1|X1|X2
+.print devw B1|X1|X4|X1
 
-.print phase B1|X1|X1|X7
-.print phase B2|X1|X1|X7
+.print devw B2|X1|X4|X1
+
+.print devw R1|X1|X4|X1
+
+.print devw R2|X1|X4|X1
+
+.print devw R3|X1|X4|X1
+
+.print devw Q2|X1|X4|X1
 
 .end

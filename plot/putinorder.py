@@ -10,7 +10,7 @@ def order(filepath : str, index_list : list, bias : str):
     for name, group in df.groupby(index_list):
         dict = {str(tuple(index_list)) : str(name)}
         dict["count"]=len(group)
-        dict["Vbias"]=str(group[bias].values.tolist())
+        dict["Vbias"]=str(sorted(group[bias].values.tolist()))
         record = pd.Series(dict)
         new = new.append(record, ignore_index=True)
 
@@ -20,9 +20,9 @@ def order(filepath : str, index_list : list, bias : str):
 
 if __name__ == '__main__':
 
-    index_list = ["L","R"]
+    index_list = ["L","A"]
     bias = "Vbias"
-    filepath = "/home/tane/main/hfq-optimizer/result/vv2.csv"
+    filepath = "/home/tane/main/hfq-optimizer/result/hfqdff_res6.csv"
 
     order(filepath,index_list,bias)
     # print(df)

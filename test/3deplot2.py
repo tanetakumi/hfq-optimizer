@@ -26,8 +26,8 @@ def func(x,y,exphi,licphi):
 
 resl = np.arange(5000,dtype=np.float64).reshape(50, 100)
 
-for a in range(100):
-    licp = a/100
+for a in range(10):
+    licp = a/10
     print(a)
     for b in range(50):
         ex = b/50
@@ -43,6 +43,8 @@ for a in range(100):
 
 # 格子点を作成
 X, Y = np.meshgrid(x, y)
+
+print(resl)
 
 # 高度の計算式
 #Z = np.cos(X/pi) * np.sin(Y/pi)
