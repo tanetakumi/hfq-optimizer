@@ -2,22 +2,37 @@ import numpy as np
 import math
 import random
 
-def func(t1,t2,licp):
-    a = (t1+t2)/2
-    b = (t1-t2)/2
+# A = 外部磁場　B = LIc
+def func3(y,A,B):
     p = math.pi
-    return 2* np.cos(a) * np.sin(-1*p*licp*np.sin(a)*np.cos(b))
+    n = random.randint(-3,3)
+    mi = (y-p*A+n*p)/(p*B*math.cos(y))
+    if mi >-1 and mi < 1:
+        x = math.asin(mi)
+        return 2* math.cos(x)*math.sin(y)
+    else: 
+        return 0
+
+# A = 外部磁場　B = LIc
+def func_igmax(A,B):
+    if B == 0:
+        return math.fabs(2*math.sin(A*math.pi))
+    else:    
+        vmax = 0
+        max_y = 0
+        for i in range(10000):
+            y = random.random()*1.6
+            result = func3(y,A,B)
+            if result > vmax:
+                vmax = result
+                max_y = y
+        print(B, ", ", max_y)
+        return vmax
 
 if __name__ == "__main__":
     L = 3.5 * 10**(-12)
     Ic = 0.0001
     phi = 2.07 * 10 ** (-15)
-    vmin = 0
-    for i in range(10000):
-        t1 = random.random()*6.28
-        t2 = random.random()*6.28
-        res = func(t1,t2,L*Ic/phi)
-        if res > vmin:
-            vmin = res
+    result = func_igmax(0, L*Ic/phi)
     print("nominal ic")        
-    print('{:.8f}'.format(vmin*Ic))
+    print('{:.8f}'.format(result*Ic))

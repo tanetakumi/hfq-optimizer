@@ -1,25 +1,43 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-import random 
+import random
 
-def func(t1,t2,licp):
-    a = (t1+t2)/2
-    b = (t1-t2)/2
+from numpy.lib.shape_base import split 
+
+
+# A = 外部磁場　B = LIc
+def func3(y,A,B):
     p = math.pi
-    return 2* np.cos(a) * np.sin(-1*p*licp*np.sin(a)*np.cos(b))
+    n = random.randint(-3,3)
+    mi = (y-p*A+n*p)/(p*B*math.cos(y))
+    if mi >-1 and mi < 1:
+        x = math.asin(mi)
+        return 2* math.cos(x)*math.sin(y)
+    else: 
+        return 0
+
+# A = 外部磁場　B = LIc
+def func_igmax(A,B):
+    if B == 0:
+        return math.fabs(2*math.sin(A*math.pi))
+    else:    
+        vmax = 0
+        max_y = 0
+        for i in range(10000):
+            y = random.random()*1.6
+            result = func3(y,A,B)
+            if result > vmax:
+                vmax = result
+                max_y = y
+        print(B, ", ", max_y)
+        return vmax
 
 if __name__ == "__main__":
 
-    for j in range(1000):
-        licp = j/1000
-        vmin = 0
-        for i in range(10000):
-            t1 = random.random()*6.28
-            t2 = random.random()*6.28
-            res = func(t1,t2,licp)
-            if res > vmin:
-                vmin = res
-        print(licp)
-        plt.plot(licp, vmin ,marker='.',linestyle='None',color = "Blue")
+    # 分割数
+    split_num = 1000
+    for j in range(1,split_num):
+        licp = j/split_num
+        plt.plot(licp, func_igmax(0.6,licp) ,marker='.',linestyle='None',color = "Blue")
     plt.show()

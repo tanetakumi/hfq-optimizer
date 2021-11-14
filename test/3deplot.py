@@ -27,9 +27,9 @@ Z = np.cos(X/pi) * np.sin(Y/pi)
 print(type(Z))
 
 # 曲面を描画
-#ax.plot_surface(X, Y, Z, cmap = "summer")
+ax.plot_surface(X, Y, Z, cmap = "summer")
 
 # 底面に等高線を描画
-#ax.contour(X, Y, Z, colors = "black", offset = -1)
+ax.contour(X, Y, Z, colors = "black", offset = -1)
 
-#plt.show()
+plt.show()
