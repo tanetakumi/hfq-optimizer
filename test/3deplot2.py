@@ -40,8 +40,8 @@ def func_igmax(A,B):
         return math.fabs(2*math.sin(A*math.pi))
     else:    
         vmax = 0
-        for i in range(3000):
-            y = (random.random()-0.5)*2*6.28
+        for i in range(10000):
+            y = (i/10000)*6.28
             result = func3(y,A,B)
             if result > vmax:
                 vmax = result
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # 円周率の定義
     pi = np.pi
 
-    licp_ax=50
+    licp_ax=100
     ex_ax=300
 
     # (x,y)データを作成

@@ -241,7 +241,7 @@ if __name__ == '__main__':
     # list dataframe 変換
     df = variables_to_dataframe(variables)
     # 変数Dataframeの分割
-    dfs = split_dataframe(df,10)
+    dfs = split_dataframe(df,20)
 
     # default データの取得
     default_data = get_default_data(raw, sim_dir+'/def.inp', variables, squids)
@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
 
     
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=12)
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
     futures = []
     
     for i, dataf in enumerate(dfs):

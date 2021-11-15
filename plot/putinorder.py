@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     index_list = ["L","A"]
     bias = "Vbias"
-    filepath = "/home/tane/main/hfq-optimizer/result/hfqdff_res6.csv"
+    filepath = "/home/tanetakumi/main/hfq-optimizer/result/hfq-dff/hfqdff-opt4.csv"
 
     order(filepath,index_list,bias)
     # print(df)
