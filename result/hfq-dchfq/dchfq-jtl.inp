@@ -64,7 +64,7 @@ L2               2        3   20pH fcheck
 Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
 Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
-L1                      3        0    4pH fcheck
+L1                      3        0    #(L)pH fcheck
 X1       psquid         3        4
 L3                      4        5    #(A)pH fcheck
 L4                      5        6    2.00pH fcheck
@@ -76,7 +76,9 @@ X5       DCHFQ_JTL      8        9     100
 X6       DCHFQ_JTL      9        10    100
 .ends
 
-*v*A=(4;1;20;1)
+*v*A=(4;5;20;1)
+
+*v*L=(4;4;8;1)
 
 .subckt DCHFQ_JTL     1  5  100
 L1               1  2   18pH fcheck
@@ -133,7 +135,7 @@ R1                     4     5  8.32ohm
 L1                     5     0  2pH fcheck
 Vb                     100   0  pwl(0ps 0mV 100ps #(Vbias)mV)
 
-*v*Vbias=(1.0;0.3;1.8;0.1)
+*v*Vbias=(1.0;0.4;1.2;0.1)
 
 **netlis file
 .tran 1.0ps 6000ps 0ps 1ps

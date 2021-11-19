@@ -33,6 +33,6 @@ if __name__ == "__main__":
     L = 3.5 * 10**(-12)
     Ic = 0.0001
     phi = 2.07 * 10 ** (-15)
-    result = func_igmax(0, L*Ic/phi)
+    result = func_igmax(0, (L*Ic)/phi)
     print("nominal ic")        
     print('{:.8f}'.format(result*Ic))

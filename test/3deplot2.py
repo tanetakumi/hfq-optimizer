@@ -26,7 +26,7 @@ def func2(y,A,B):
 # A = 外部磁場　B = LIc
 def func3(y,A,B):
     p = math.pi
-    n = random.randint(-3,3)
+    n = random.randint(-2,2)
     mi = (y-p*A+n*p)/(p*B*math.cos(y))
     if mi >-1 and mi < 1:
         x = math.asin(mi)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     pi = np.pi
 
     licp_ax=100
-    ex_ax=300
+    ex_ax=200
 
     # (x,y)データを作成
     x = np.linspace(0, 1, licp_ax)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         licp = _x/licp_ax
         print(_x)
         for _y in range(ex_ax):
-            ex = (_y-150)/50
+            ex = (_y-100)/50
             Z[_y][_x] = func_igmax(ex,licp)
     
     # 曲面を描画

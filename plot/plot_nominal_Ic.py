@@ -39,5 +39,5 @@ if __name__ == "__main__":
     split_num = 1000
     for j in range(1,split_num):
         licp = j/split_num
-        plt.plot(licp, func_igmax(0.6,licp) ,marker='.',linestyle='None',color = "Blue")
+        plt.plot(licp, func_igmax(0,licp) ,marker='.',linestyle='None',color = "Blue")
     plt.show()

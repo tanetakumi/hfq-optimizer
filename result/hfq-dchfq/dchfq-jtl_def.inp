@@ -18,10 +18,8 @@ L1                 3         1   1.75pH fcheck
 L2                 3         4   1.75pH fcheck
 B1                 1         5  jjmod area=0.55
 R1                 1         5   14.2ohm
-B2                 2         5  jjmod area=0.55
-R2                 2         5   14.2ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
+Q2                 4         5  jjmod area=0.55
+R3                 4         5   14.2ohm
 .ends
 
 .subckt psquid3        3  5 
@@ -66,7 +64,7 @@ Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
 L1                      3        0    4pH fcheck
 X1       psquid         3        4
-L3                      4        5    4pH fcheck
+L3                      4        5    10pH fcheck
 L4                      5        6    2.00pH fcheck
 R1                      100      5    100ohm
 X2       psquid         6        0
@@ -76,7 +74,7 @@ X5       DCHFQ_JTL      8        9     100
 X6       DCHFQ_JTL      9        10    100
 .ends
 
-*v*L=(4;1;10;0.5)
+*v*L=(10;2;40;2)
 
 .subckt DCHFQ_JTL     1  5  100
 L1               1  2   18pH fcheck
@@ -141,14 +139,14 @@ Vb                     100   0  pwl(0ps 0mV 100ps 0.8mV)
 .tran 1.0ps 6000ps 0ps 1ps
 
 
-.print phase B1|X1|X3|X0
-.print phase B2|X1|X3|X0
+*.print phase B1|X1|X3|X0
+*.print phase B2|X1|X3|X0
 
-.print phase B1|X1|X5|X0
-.print phase B2|X1|X5|X0
+*.print phase B1|X1|X5|X0
+*.print phase B2|X1|X5|X0
 
-.print phase B1|X1|X1|X1
-.print phase B2|X1|X1|X1
+*.print phase B1|X1|X1|X1
+*.print phase B2|X1|X1|X1
 
 .print phase B1|X1|X1|X2
 .print phase B2|X1|X1|X2

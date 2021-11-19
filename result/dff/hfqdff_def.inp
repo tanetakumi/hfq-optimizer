@@ -1,17 +1,23 @@
-.model jjmod jj(Rtype=1, Vg=2.8mV, Cap=0.064pF, R0=100ohm, Rn=16ohm, Icrit=0.1mA)
+.model jjmod jj(Rtype=1, Vg=2.9mV, Cap=0.2pF, R0=8000ohm, Rn=170ohm, Icrit=10uA)
 
 
 *PYSQUID=========================================================================
 
-.subckt psquid        3  5 
-L1                 3         1   1.75pH fcheck
-L2                 3         4   1.75pH fcheck
-B1                 1         5  jjmod area=0.49
-R1                 1         5   15.88ohm
-B2                 2         5  jjmod area=0.49
-R2                 2         5   15.88ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
+.subckt psquid        3  7 
+L1                 3         1   30pH fcheck
+L2                 3         4   30pH fcheck
+*IB1                1         5  NOISE(2.6916p 0.0 1.0p) 
+B1                 1         5  jjmod area=0.09
+*IR1               1         5  NOISE(3.8737p 0.0 1.0p) 
+R1                 1         5   200ohm
+L3                 5         7   0.03pH fcheck
+*IB2                2         6  NOISE(2.6916p 0.0 1.0p) 
+B2                 2         6  jjmod area=0.09
+*IR2               2         6  NOISE(3.8737p 0.0 1.0p) 
+R2                 2         6   200ohm
+L4                 6         7   0.03pH fcheck
+Q2                 4         2  jjmod area=10
+R3                 4         2   2ohm
 .ends
 
 .subckt psquid2        3  5 
@@ -124,24 +130,21 @@ X4       JTL            4  5  100
 
 
 .subckt DFF 1 4 9 100
-L1                   1  2  #(L)pH fcheck  
+L1                   1  2  10pH fcheck  
 X1       psquid      2  3
-L2                   3  7  #(A)pH fcheck
+L2                   3  7  18pH fcheck
 
 L3                   4  5  18pH fcheck
 L4                   5  6  18pH fcheck
 X2       psquid      6  0
 L5                   6  7  2pH  fcheck
 R1                   100  7  100ohm
-L6                   7  8  #(L)pH fcheck
+L6                   7  8  20pH fcheck
 L7                   8  9  2pH fcheck
 X3       psquid      9  0
 .ends
 
-
-*v*L=(10;5;20;3)
-
-*v*A=(18;3;8;1)
+*v*R=(100;40;200;20)
 
 *** top cell: 
 Vin1                     1     0      PWL(0ps 0mV   360ps 0mV 370ps 25mV 470ps 25mV 480ps 0mV   860ps 0mV 870ps 25mV 970ps 25mV 980ps 0mV   1360ps 0mV 1370ps 25mV 1470ps 25mV 1480ps 0mV)
@@ -162,10 +165,10 @@ X8       JTL4          10    11  100
 X9       psquid        11     0
 R1                     11    12  8.32ohm
 L1                     12     0  2pH fcheck
-Vb                     100    0  pwl(0ps 0mV 100ps #(Vbias)mV)
+Vb                     100    0  pwl(0ps 0mV 100ps 0.4mV)
 
 
-*v*Vbias=(1.2;0.6;2.5;0.2)
+*v*Vbias=(1.2;0.8;1.2;0.05)
 
 **netlis file
 .tran 1.0ps 6000ps 0ps 1ps

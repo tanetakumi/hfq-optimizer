@@ -48,17 +48,6 @@ R3                 4         2   0.2ohm
 *================================================================================
 
 
-.subckt HFQ_bias            1  3  4
-L1               1        2   20pH fcheck
-L2               2        3   20pH fcheck
-R1               2        4   130ohm
-.ends
-
-.subckt HFQ_bias_non        1  3  
-L1               1        2   20pH fcheck
-L2               2        3   20pH fcheck
-.ends
-
 
 .subckt DCHFQ 1 10 100
 Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
@@ -66,7 +55,7 @@ Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
 L1                      3        0    4pH fcheck
 X1       psquid         3        4
-L3                      4        5    4pH fcheck
+L3                      4        5    10pH fcheck
 L4                      5        6    2.00pH fcheck
 R1                      100      5    100ohm
 X2       psquid         6        0
@@ -76,7 +65,7 @@ X5       DCHFQ_JTL      8        9     100
 X6       DCHFQ_JTL      9        10    100
 .ends
 
-*v*L=(4;1;10;0.5)
+*v*L=(10;12;23;0.5)
 
 .subckt DCHFQ_JTL     1  5  100
 L1               1  2   18pH fcheck

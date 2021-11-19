@@ -146,12 +146,13 @@ if __name__ == '__main__':
     print(tup[0])
     for w in tup[0]:
         w = w.upper()
-        new_df['W('+w+')'] = (df['V('+w+')'] * df['I('+w+')']).abs()*0.2*10**(-12)
+        # new_df['W('+w+')'] = (df['V('+w+')'] * df['I('+w+')']).abs()
+        new_df['W('+w+')'] = (df['V('+w+')'] * df['I('+w+')']).abs()
     print(new_df)
 
     os.remove(filepath)
 
-    print(new_df.sum())
+    print(new_df.sum()*0.1*10**(-12))
 
     new_df.plot()
     plt.show()

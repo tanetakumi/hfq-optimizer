@@ -61,7 +61,7 @@ L2               2        3   20pH fcheck
 
 
 .subckt DCHFQ 1 10 100
-Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
+Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV)
 Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
 L1                      3        0    4pH fcheck
@@ -76,6 +76,7 @@ X5       DCHFQ_JTL      8        9     100
 X6       DCHFQ_JTL      9        10    100
 .ends
 
+*v*L=(10;2;40;2)
 
 .subckt DCHFQ_JTL     1  5  100
 L1               1  2   18pH fcheck
@@ -88,16 +89,15 @@ R1               100  4   50ohm
 .ends
 
 .subckt JTL     1  5  100
-L1               1  2   #(L)pH fcheck
-L2               2  3   #(L)pH fcheck
-L3               3  4   #(L)pH fcheck
-L4               4  5   #(L)pH fcheck
+L1               1  2   18pH fcheck
+L2               2  3   18pH fcheck
+L3               3  4   18pH fcheck
+L4               4  5   18pH fcheck
 X1    psquid     3  0
 X2    psquid     5  0
 R1               100  4   50ohm
 .ends
 
-*v*L=(18;12;23;1)
 
 .subckt JTL4    1  5  100
 X1       JTL            1  2  100
@@ -131,24 +131,27 @@ X2       JTL4          3     4  100
 X3       psquid        4     0
 R1                     4     5  8.32ohm
 L1                     5     0  2pH fcheck
-Vb                     100   0  pwl(0ps 0mV 100ps #(Vbias)mV)
+Vb                     100   0  pwl(0ps 0mV 100ps 0.8mV)
 
-*v*Vbias=(1.0;0.3;1.8;0.05)
+
+
+*v*Vbias=(1.2;0.3;1.3;0.02)
 
 **netlis file
-.tran 1.0ps 6000ps 0ps 1ps
+.tran 0.2ps 500ps 0ps
 
 
-.print phase B1|X1|X3|X0
-.print phase B2|X1|X3|X0
 
-.print phase B1|X1|X5|X0
-.print phase B2|X1|X5|X0
+.print devi B1|X1|X1|X1
+.print devi B2|X1|X1|X1
 
-.print phase B1|X1|X1|X1
-.print phase B2|X1|X1|X1
+.print devi R1|X1|X1|X1
+.print devi R2|X1|X1|X1
 
-.print phase B1|X1|X1|X2
-.print phase B2|X1|X1|X2
+*.print devv B1|X1|X1|X1
+*.print devv B2|X1|X1|X1
+
+*.print devv R1|X1|X1|X1
+*.print devv R2|X1|X1|X1
 
 .end

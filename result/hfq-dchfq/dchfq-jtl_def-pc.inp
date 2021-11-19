@@ -61,7 +61,7 @@ L2               2        3   20pH fcheck
 
 
 .subckt DCHFQ 1 10 100
-Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV)
+Vin                     1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV   440ps 0mV 450ps 25mV 550ps 25mV 560ps 0mV)
 Rin                     1        2    50ohm
 L0                      2        3    2pH fcheck
 L1                      3        0    4pH fcheck
@@ -138,17 +138,21 @@ Vb                     100   0  pwl(0ps 0mV 100ps 0.8mV)
 *v*Vbias=(1.2;0.3;1.3;0.02)
 
 **netlis file
-.tran 0.2ps 380ps 0ps
+.tran 0.2ps 600ps 200ps
 
 
 
-.print devw B1|X1|X1|X1
-.print devw B2|X1|X1|X1
+.print devw B1|X1|X0
+.print devw B2|X1|X0
 
-.print devw R1|X1|X1|X1
-.print devw R2|X1|X1|X1
+.print devw R1|X1|X0
+.print devw R2|X1|X0
 
-.print devw R1|X1|X1
+.print devw B1|X2|X0
+.print devw B2|X2|X0
+
+.print devw R1|X2|X0
+.print devw R2|X2|X0
 
 .print devw R1|X0
 

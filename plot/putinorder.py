@@ -20,9 +20,9 @@ def order(filepath : str, index_list : list, bias : str):
 
 if __name__ == '__main__':
 
-    index_list = ["L","A"]
+    index_list = ["A","L"]
     bias = "Vbias"
-    filepath = "/home/tanetakumi/main/hfq-optimizer/result/hfq-dff/hfqdff-opt4.csv"
+    filepath = "/home/tanetakumi/main/hfq-optimizer/result/hfq-jtl/a2.csv"
 
     order(filepath,index_list,bias)
     # print(df)
