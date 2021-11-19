@@ -3,137 +3,29 @@
 .subckt psquid        3  5 
 L1                 3         1   1.75pH fcheck
 L2                 3         4   1.75pH fcheck
-B1                 1         5  jjmod area=0.49
+B1                 1         5  jjmod area=0.5
 R1                 1         5   15.88ohm
-B2                 2         5  jjmod area=0.49
-R2                 2         5   15.88ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
+Q2                 4         5  jjmod area=0.5
+R2                 4         5   15.88ohm
 .ends
 
-.subckt psquid2        3  5 
-L1                 3         1   1.75pH fcheck
-L2                 3         4   1.75pH fcheck
-B1                 1         5  jjmod area=0.55
-R1                 1         5   14.2ohm
-B2                 2         5  jjmod area=0.55
-R2                 2         5   14.2ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
-.ends
+* Example JTL Basic
+VIN        1          0          pwl(0 0 300p 0 301p 0.5175mV 302p 0.5175mV 303p 0  400p 0 401p 0.5175mV 402p 0.5175mV 403p 0  500p 0 501p 0.5175mV 502p 0.5175mV 503p 0)
+X01        psquid       1       0
+L1                      1       2       18pH
+R1                      2       100     50ohm
+L2                      2       3       18pH
+X02        psquid       3       0      
+L3                      3       4       18pH
+R2                      4       100     50ohm
+L4                      4       5       18pH
+X03        psquid       5       0       
 
-.subckt psquid3        3  5 
-L1                 3         1   1.75pH fcheck
-L2                 3         4   1.75pH fcheck
-B1                 1         5  jjmod area=0.6
-R1                 1         5   12.8ohm
-B2                 2         5  jjmod area=0.6
-R2                 2         5   12.8ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
-.ends
+R3                      5       6       8.32ohm
+L5                      6       0       2pH
+Vb                      100     0       pwl(0ps 0mV 100ps 1.2mV)
 
-.subckt psquid4        3  5 
-L1                 3         1   1.75pH fcheck
-L2                 3         4   1.75pH fcheck
-B1                 1         5  jjmod area=0.4
-R1                 1         5   15.88ohm
-B2                 2         5  jjmod area=0.4
-R2                 2         5   15.88ohm
-Q2                 4         2  jjmod area=20
-R3                 4         2   0.2ohm
-.ends
-*v*c= (20;19;21;1)
-.subckt HFQ_bias         1  3  4
-L1               1        2   #(c)pH fcheck
-L2               2        3   #(c)pH fcheck
-R1               2        4   130ohm
-.ends
-.subckt HFQ_bias1         1  3  
-L1               1        2   #(c)pH fcheck
-L2               2        3   #(c)pH fcheck
-.ends
-*v*a=(2;1.8;2.2;0.2)
-*v*b=(42;41;42;1)
-
-.subckt DCHFQ 1 8 100
-Vin                1        0    PWL(0ps 0mV 240ps 0mV 250ps 25mV 350ps 25mV 360ps 0mV 740ps 0mV 750ps 25mV 850ps 25mV 860ps 0mV 1240ps 0mV 1250ps 25mV 1350ps 25mV 1360ps 0mV)
-Rin                1        20   1050ohm
-L01                20       2    #(a)pH fcheck
-L0                 2        0    #(b)pH fcheck
-L1                 2        21   #(a)pH fcheck
-X1       psquid    21       22
-L3                 22       33   2.00pH fcheck
-L4                 33       3    2.00pH fcheck
-X2       psquid2   3        0
-
-X3       psquid         4  0
-X4       psquid         5  0
-X5       psquid         6  0
-X6       psquid         7  0
-
-X11      HFQ_bias1      3  4
-X12      HFQ_bias       4  5  100
-X13      HFQ_bias1      5  6
-X14      HFQ_bias       6  7  100
-X15      HFQ_bias1      7  8
-
-R1               100      33  150ohm
-.ends
-
-
-.subckt JTL4 1 5 100
-X1       psquid         1  0
-X12      HFQ_bias    1  2  100
-X2       psquid         2  0
-X23      HFQ_bias1    2  3
-X3       psquid         3  0
-X34      HFQ_bias    3  4  100
-X4       psquid         4  0
-X45      HFQ_bias1    4  5
-.ends
-
-.subckt DFF 5 1 9 100
-X1       psquid      1 0
-X2       psquid      2 0
-*R0      100 1 230ohm
-X12      HFQ_bias    1 2 100
-L1       2 3  5pH fcheck
-X3       psquid      4 3
-L2       4 7  5pH fcheck
-X4       psquid      5 0
-L3       5 6 60pH fcheck
-L4       6 7 30pH fcheck
-L5       7 8 30pH fcheck
-X5       psquid      8 0
-X50      HFQ_bias1   8 9 100
-R1       100 6 300ohm
-.ends
-
-*v*d=(3.0;3.0;4.0;0.5)
-
-*** top cell: 
-X0       DCHFQ         1  2 100
-X1       JTL4          2  7 100
-X5       JTL4          7  8 100
-X6       psquid        8  0
-R1                     8  9      8.32ohm
-L1                     9  0      2pH fcheck
-
-Vb                     100   0 pwl(0ps 0mV 100ps #(d)mV)
-
-**netlis file
-.tran 0.1ps 6000ps 0ps 1ps
-
-.print phase  B9|X2|X0
-
-.print phase  B1|X2|X0
-.print phase  B2|X2|X0
-
-.print phase  B1|X1|X1
-.print phase  B2|X1|X1
-
-.print phase  B1|X1|X5
-.print phase  B2|X1|X5
-
+.tran 0.25p 1000p 0 0.25p
+.print PHASE B1|X02
+.print PHASE Q2|X02
 .end
