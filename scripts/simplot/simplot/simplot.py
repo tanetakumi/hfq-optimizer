@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import re
-from .simulation import simulation
+from simulation import simulation
 import sys
 
 def remove_opt_symbol(sim_data : str) -> str:
@@ -40,5 +40,6 @@ def main():
         sys.exit(1)
 
 if __name__ == '__main__':
+    from simulation import simulation
     simulation_plot('/workspaces/docker-josim/files/hfqdff_lisan.inp')
     
