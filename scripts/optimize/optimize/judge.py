@@ -18,7 +18,7 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squid : list)
 
         # バイアスをかけた時の状態の位相(初期位相)
         init_phase = srs[( srs.index > time1 ) & ( srs.index < time2 )].mean()
-        # print(column_name," init phase = ",init_phase)
+        
         judge_phase = init_phase + p
         
         # クロックが入ってからのものを抽出
