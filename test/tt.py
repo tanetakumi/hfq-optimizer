@@ -6,8 +6,6 @@ R1                     11    12  8.32ohm
 L1                     12     0  2pH fcheck
 Vb                     100    0  pwl(0ps 0mV 100ps 1.2mV)
 
-
-
 **netlis file
 .tran 1.0ps 6000ps 0ps 1ps
 
@@ -28,6 +26,8 @@ Vb                     100    0  pwl(0ps 0mV 100ps 1.2mV)
 * 初期パルスの入力開始時間
 * StartTimeOfPulseInput=200e-12
 """
+
+
 m_object = re.search("EndTimeOfBiasRise"+'=[\d\.\+e-]+', f, flags=re.IGNORECASE)
 if m_object:
     print(m_object.group())
