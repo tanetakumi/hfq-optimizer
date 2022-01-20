@@ -1,5 +1,5 @@
-import judge
-import simulation
+from .judge import judge
+from .pyjosim import simulation
 import pandas as pd
 
 

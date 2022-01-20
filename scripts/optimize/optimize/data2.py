@@ -6,10 +6,10 @@ from .judge import judge
 
 class Data:
     def __init__(self, raw_data : str, show : bool = False):
-        self.v_df = self.get_variable(raw_data)
-        self.time_start = float(self.get_value(raw_data, "EndTimeOfBiasRise"))
-        self.time_stop = float(self.get_value(raw_data, "StartTimeOfPulseInput"))
-        self.squids = self.get_judge_spuid(raw_data)
+        self.v_df = self.__get_variable(raw_data)
+        self.time_start = float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
+        self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
+        self.squids = self.__get_judge_spuid(raw_data)
         self.sim_data = re.sub('\*+\s*optimize[\s\S]+$','', raw_data)
         self.default_result = None
 
@@ -24,7 +24,7 @@ class Data:
             print(self.squids)
             print('\n')
 
-    def get_variable(self, raw) -> list:
+    def __get_variable(self, raw) -> list:
         df = pd.DataFrame(columns=['char', 'default', 'value', 'fixed', 'text'])
         df.set_index('char', inplace=True)
 
@@ -47,14 +47,14 @@ class Data:
 
         return df
 
-    def get_value(self, raw, key) -> str:
+    def __get_value(self, raw, key) -> str:
         m_object = re.search(key+'=[\d\.\+e-]+', raw, flags=re.IGNORECASE)
         if m_object:
             return re.split('=', m_object.group())[1]
         else:
             return None
 
-    def get_judge_spuid(self, raw : str) -> list:
+    def __get_judge_spuid(self, raw : str) -> list:
         squids = []
         tmp = []
         for line in raw.splitlines():
@@ -78,6 +78,6 @@ class Data:
         if plot:
             print("default 値でのシュミレーション結果")
             df.plot()
-        res = judge(self.time_start, self.time_stop, df, self.squids)
-        print(res)
+
+        self.default_result = judge(self.time_start, self.time_stop, df, self.squids, plot)
         
