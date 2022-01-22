@@ -1,93 +1,282 @@
-import os
+from .judge import judge, compareDataframe
+from .pyjosim import simulation
+from .data2 import Data
+from .util import vround
 import pandas as pd
 import concurrent.futures
-from simulation import simulation
-from margin import margin
-from judge import judge
-import data
-import re
-from margin_plot import margin_plot
+import matplotlib.pyplot as plt
 
+class Optimize:
+    def __init__(self, data : Data):
+        self.data = data
+        self.margins = pd.DataFrame()
+        if data.default_result.empty:
+            raise ValueError("デフォルト値でのシュミレーションがされていません。")
 
+    def margin(self, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
 
+        self.margins = pd.DataFrame(columns=['low(value)', 'low(%)', 'high(value)', 'high(%)'])
 
-def sim_default(data : dict) -> pd.DataFrame:
-    sim_data = data['input']
-    for v in data['variables']:
-        print(v['text'])
-        sim_data = sim_data.replace(v['text'], '{:.2f}'.format(v['def']))
-    return judge(data['time1'], data['time2'], simulation(sim_data), data['squids'])
+        futures = []
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
 
-    
-def get_margins(data : dict, def_df : pd.DataFrame):
-    futures = []
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        for index_main, row_main in self.data.v_df.iterrows():
+            future = executor.submit(self.__get_margin, self.data, index_main, row_main, accuracy)
+            futures.append(future)
 
-    margins_list = []
-    for v in data['variables']:
-        future = executor.submit(margin, data, def_df, v)
-        futures.append(future)
-    
-    for future in concurrent.futures.as_completed(futures):
-        margins_list.append(future.result())
-    executor.shutdown()
+        for future in concurrent.futures.as_completed(futures):
+            result_dic= future.result()
+            # variables dataframeに追加
+            self.margins.loc[result_dic["index"]] = result_dic["result"]
 
-    return margins_list
+        return pd.concat([self.data.v_df, self.margins], axis=1)
 
+    # concurrent.futureで回すのでselfを使わないようにしているが、これでよいのだろうか？
+    def __get_margin(self, data : Data, index_main : str, row_main : pd.Series, accuracy : int):
+        variables : pd.DataFrame = data.v_df
+        sim_data : str = data.sim_data
+        # シュミレーションデータの作成
+        for index_tmp, row_tmp in variables.iterrows():
+            if index_main != index_tmp:
+                sim_data = sim_data.replace(row_tmp['text'], str(row_tmp['value']))
 
-def optimize(filepath : str):
-    if os.path.exists(filepath):
-        # 読み込み
-        with open(filepath, 'r') as f:
-            raw = f.read()
-        # get main data
-        main_data = data.get_main_data(raw)
+        # lower
+        default_v = row_main['value']
+        high_v = default_v
+        low_v = 0
+        target_v = vround((high_v + low_v)/2) 
 
-        # simualtion default value
-        def_value_dataframe = sim_default(main_data)
-
-        # vlist 
-        vlist = main_data['variables']
-
-        pre = None
-        for i in range(7):
-            margin_list = get_margins(main_data, def_value_dataframe)
-            margin_plot(pd.DataFrame(margin_list).set_index('char'), str(i))
-            min_margin = 100
-            for m in margin_list:
-                print(m)
-                if abs(m['lower']) < min_margin:
-                    min_margin = abs(m['lower'])
-                    min_element = m
-                if m['upper'] < min_margin:
-                    min_margin = abs(m['upper'])
-                    min_element = m
-
-            vlist = main_data['variables']
-            for i in range(len(vlist)):
-                if vlist[i]['char'] == min_element['char']:
-                    upper_margin = min_element['upper_value'] if min_element['upper'] < 100 else min_element['def'] * 2
-                    vlist[i]['def'] = ( upper_margin + min_element['lower_value'] )/2
-            main_data['variables'] = vlist
-
-            print("-----minimum margin:",min_element,"-----")
-            
-            
-            if pre!= None and pre['char'] == min_element['char']:
-                break;
+        for i in range(accuracy):
+            tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+            tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+            if compareDataframe(tmp_df, data.default_result):
+                high_v = target_v
+                target_v = vround((high_v + low_v)/2) 
             else:
-                pre = min_element
+                low_v = target_v
+                target_v = vround((high_v + low_v)/2)
 
-    else:
-        print("ファイルが存在しません。\n指定されたパス:"+filepath)
+        lower_margin = vround(high_v)
+        lower_margin_rate = vround((lower_margin - default_v) * 100 / default_v)
 
-def main():
-    import sys
-    if len(sys.argv) == 2:
-        optimize(sys.argv[1])
-    else:
-        print("引数が足りません。\n入力された引数:"+str(len(sys.argv))) 
+        # upper
+        high_v = 0
+        low_v = default_v
+        target_v = vround(default_v * 2)
+
+        for i in range(accuracy):
+            tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+            tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+            if compareDataframe(tmp_df, data.default_result):
+                if high_v == 0:
+                    low_v = target_v
+                    break
+                low_v = target_v
+                target_v = vround((high_v + low_v)/2)
+            else:
+                high_v = target_v
+                target_v = vround((high_v + low_v)/2)
+
+        upper_margin = vround(low_v)
+        upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v)
+
+        return {"index" : index_main, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
+    
+    def plot(self, filename = None):
+        
+        # 全体フォントサイズ
+        plt.rcParams["font.size"] = 15
+        # color
+        plot_color = '#01b8aa'
+        # 図のサイズ
+        fig, axes = plt.subplots(figsize=(10,5), facecolor="White", ncols=2, sharey=True)
+        # タイトレイアウト(二つの図の隙間を埋める)
+        fig.tight_layout()
+        
+        df = self.margins.sort_index()
+        index = df.index
+        column0 = df['low(%)']
+        column1 = df['high(%)']
+
+        axes[0].barh(index, column0, align='center', color=plot_color)
+        axes[0].set_xlim(-100, 0)
+        axes[1].barh(index, column1, align='center', color=plot_color)
+        axes[1].set_xlim(0, 100)
+        axes[1].tick_params(axis='y', colors=plot_color)
+
+        plt.subplots_adjust(wspace=0, top=0.85, bottom=0.1, left=0.18, right=0.95)
+
+        if filename != None:
+            fig.savefig(filename)
+
+    def optimize(self):
+        min_margin = 100
+        min_index = None
+        for index, srs in self.margins.iterrows():
+            if not srs['fixed']:
+                if abs(srs['low(%)']) < min_margin or abs(srs['high(%)']) < min_margin:
+                    min_margin = min(abs(srs['low(%)']), abs(srs['high(%)']))
+                    min_index = index
 
 
-if __name__ == '__main__':
-    optimize("/workspaces/docker-josim/files/dff.inp")
+
+"""
+def margin(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+
+    # これ修正　None で帰ってきたとき　empty　は使えない
+    if data.default_result.empty:
+        print("デフォルト値でのシュミレーションがされていません。")
+        return None   
+
+    margins = pd.DataFrame(columns=['low(value)', 'low(%)', 'high(value)', 'high(%)'])
+
+    futures = []
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
+
+    for index_main, row_main in data.v_df.iterrows():
+        future = executor.submit(get_margin, data, index_main, row_main, accuracy)
+        futures.append(future)
+
+    for future in concurrent.futures.as_completed(futures):
+        result_dic= future.result()
+        # variables dataframeに追加
+        margins.loc[result_dic["index"]] = result_dic["result"]
+
+    return pd.concat([data.v_df, margins], axis=1)
+
+def get_margin(data : Data, index_main : str, row_main : pd.Series, accuracy : int):
+    variables : pd.DataFrame = data.v_df
+    sim_data : str = data.sim_data
+    # シュミレーションデータの作成
+    for index_tmp, row_tmp in variables.iterrows():
+        if index_main != index_tmp:
+            sim_data = sim_data.replace(row_tmp['text'], str(row_tmp['value']))
+
+    # lower
+    default_v = row_main['value']
+    high_v = default_v
+    low_v = 0
+    target_v = vround((high_v + low_v)/2) 
+
+    for i in range(accuracy):
+        tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+        tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+        if compareDataframe(tmp_df, data.default_result):
+            high_v = target_v
+            target_v = vround((high_v + low_v)/2) 
+        else:
+            low_v = target_v
+            target_v = vround((high_v + low_v)/2)
+
+    lower_margin = vround(high_v)
+    lower_margin_rate = vround((lower_margin - default_v) * 100 / default_v)
+
+
+
+    # upper
+    high_v = 0
+    low_v = default_v
+    target_v = vround(default_v * 2)
+
+    for i in range(accuracy):
+        tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+        tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+        if compareDataframe(tmp_df, data.default_result):
+            if high_v == 0:
+                low_v = target_v
+                break
+            low_v = target_v
+            target_v = vround((high_v + low_v)/2)
+        else:
+            high_v = target_v
+            target_v = vround((high_v + low_v)/2)
+
+    upper_margin = vround(low_v)
+    upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v)
+
+    return {"index" : index_main, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
+
+
+
+def get_margin(data : Data, index_main : str, row_main : pd.Series, accuracy : int):
+
+    variables : pd.DataFrame = data.v_df
+    sim_data : str = data.sim_data
+    # シュミレーションデータの作成
+    for index_tmp, row_tmp in variables.iterrows():
+        if index_main != index_tmp:
+            sim_data = sim_data.replace(row_tmp['text'], str(row_tmp['value']))
+
+    # lower
+    default_v = row_main['value']
+    high_v = default_v
+    low_v = 0
+    target_v = vround((high_v + low_v)/2) 
+
+    for i in range(accuracy):
+        tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+        tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+        if compareDataframe(tmp_df, data.default_result):
+            high_v = target_v
+            target_v = vround((high_v + low_v)/2) 
+        else:
+            low_v = target_v
+            target_v = vround((high_v + low_v)/2)
+
+    lower_margin = vround(high_v)
+    lower_margin_rate = vround((lower_margin - default_v) * 100 / default_v)
+
+
+
+    # upper
+    high_v = 0
+    low_v = default_v
+    target_v = vround(default_v * 2)
+
+    for i in range(accuracy):
+        tmp_sim_data = sim_data.replace(row_main['text'], str(target_v))
+        tmp_df = judge(data.time_start, data.time_stop, simulation(tmp_sim_data), data.squids)
+        if compareDataframe(tmp_df, data.default_result):
+            if high_v == 0:
+                low_v = target_v
+                break
+            low_v = target_v
+            target_v = vround((high_v + low_v)/2)
+        else:
+            high_v = target_v
+            target_v = vround((high_v + low_v)/2)
+
+    upper_margin = vround(low_v)
+    upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v)
+
+    return {"index" : index_main, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
+
+
+def margin_plot(df : pd.DataFrame, filename = None):
+    df.sort_index(inplace=True)
+    plt.rcParams["font.size"] = 15
+
+    plot_color = '#01b8aa'
+    index = df.index
+    column0 = df['low(%)']
+    column1 = df['high(%)']
+
+    fig, axes = plt.subplots(figsize=(10,5), facecolor="White", ncols=2, sharey=True)
+    fig.tight_layout()
+    
+    axes[0].barh(index, column0, align='center', color=plot_color)
+    axes[0].set_xlim(-100, 0)
+    axes[1].barh(index, column1, align='center', color=plot_color)
+    axes[1].set_xlim(0, 100)
+    axes[1].tick_params(axis='y', colors=plot_color)
+
+    plt.subplots_adjust(wspace=0, top=0.85, bottom=0.1, left=0.18, right=0.95)
+    # 
+    if filename != None:
+        fig.savefig(filename)
+
+"""
+
+
+
+

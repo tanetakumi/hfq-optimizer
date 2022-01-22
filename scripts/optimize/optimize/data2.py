@@ -11,7 +11,7 @@ class Data:
         self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
         self.squids = self.__get_judge_spuid(raw_data)
         self.sim_data = re.sub('\*+\s*optimize[\s\S]+$','', raw_data)
-        self.default_result = None
+        self.default_result = pd.DataFrame()
 
         if show:
             print("--- List of variables to optimize ---")

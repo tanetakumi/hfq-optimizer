@@ -25,3 +25,17 @@ def stringToNum(s):
     else:
         return None
 
+
+def vround(number : float, digit : int = 3) -> float:
+    m_obj = re.search('\.',str(number))
+    if m_obj:
+        zero_obj = re.search('^0\.0*',str(number))
+        if zero_obj:
+            return round(number,zero_obj.end() -2 + digit)
+        else:
+            if m_obj.start() >= digit:
+                return int(number)
+            else:
+                return round(number, digit - m_obj.start())
+    else:
+        return int(number)
