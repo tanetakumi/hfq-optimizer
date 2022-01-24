@@ -1,3 +1,6 @@
+from heapq import merge
+
+from optimize.margin_old import margin
 from .judge import judge, compareDataframe
 from .pyjosim import simulation
 from .data2 import Data
@@ -8,28 +11,103 @@ import matplotlib.pyplot as plt
 
 class Optimize:
     def __init__(self, data : Data):
+        # コラムの保存、間違えて代入しないため
+        self.margin_columns_list = ['low(value)', 'low(%)', 'high(value)', 'high(%)']
+        # data の保存
         self.data = data
-        self.margins = pd.DataFrame()
+
+        # self.margins = pd.DataFrame()
         if data.default_result.empty:
             raise ValueError("デフォルト値でのシュミレーションがされていません。")
 
     def margin(self, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
 
-        self.margins = pd.DataFrame(columns=['low(value)', 'low(%)', 'high(value)', 'high(%)'])
-
         futures = []
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
+        
+        # tmp_dataに落とす。
+        tmp_data = self.data
+        margin_df = self.data.v_df
 
-        for index_main, row_main in self.data.v_df.iterrows():
-            future = executor.submit(self.__get_margin, self.data, index_main, row_main, accuracy)
+        for index_main, row_main in margin_df.iterrows():
+            future = executor.submit(self.__get_margin, tmp_data, index_main, row_main, accuracy)
             futures.append(future)
 
+        # result を受け取る dataframe
+        margin_result = pd.DataFrame(columns = self.margin_columns_list)
+        
         for future in concurrent.futures.as_completed(futures):
+            # 結果を受け取り
             result_dic= future.result()
             # variables dataframeに追加
-            self.margins.loc[result_dic["index"]] = result_dic["result"]
+            margin_result.loc[result_dic["index"]] = result_dic["result"]
 
-        return pd.concat([self.data.v_df, self.margins], axis=1)
+        # 現在のcolumns listを落として、今回の結果を入力する
+        margin_df.drop(columns = self.margin_columns_list, inplace=True, errors='ignore')
+        margin_df = pd.merge(margin_df, margin_result, left_index=True, right_index=True)
+
+        # data をself.data に代入
+        self.data.v_df = margin_df
+
+        return self.data.v_df
+
+    def plot(self, filename = None):
+        
+        # 全体フォントサイズ
+        plt.rcParams["font.size"] = 15
+        # color
+        plot_color = '#01b8aa'
+        # 図のサイズ
+        fig, axes = plt.subplots(figsize=(10,5), facecolor="White", ncols=2, sharey=True)
+        # タイトレイアウト(二つの図の隙間を埋める)
+        fig.tight_layout()
+        
+        df = self.data.v_df.sort_index()
+        index = df.index
+        column0 = df['low(%)']
+        column1 = df['high(%)']
+
+        axes[0].barh(index, column0, align='center', color=plot_color)
+        axes[0].set_xlim(-100, 0)
+        axes[1].barh(index, column1, align='center', color=plot_color)
+        axes[1].set_xlim(0, 100)
+        axes[1].tick_params(axis='y', colors=plot_color)
+
+        plt.subplots_adjust(wspace=0, top=0.85, bottom=0.1, left=0.18, right=0.95)
+
+        if filename != None:
+            fig.savefig(filename)
+
+    def optimize(self, dirpath = None):
+        
+        # 今のところは10回の回数制限とbreakで処理
+        # 後々、制限を変更したい
+        pre_min_margin = None
+        for i in range(10):
+            self.margin()
+            self.plot()
+            min_margin = 100
+            min_index = None
+            for index, srs in self.data.v_df.iterrows():
+                if not srs['fixed']:
+                    if abs(srs['low(%)']) < min_margin or abs(srs['high(%)']) < min_margin:
+                        min_margin = min(abs(srs['low(%)']), abs(srs['high(%)']))
+                        min_index = index
+
+            print("最小のマージンのindex   ",min_index)
+            print(self.data.v_df)
+            if pre_min_margin == min_margin:
+                break
+            pre_min_margin = min_margin
+            
+            # value 最小値にてvalue を書き換え
+            self.data.v_df.at[min_index, 'value'] = vround((self.data.v_df.at[min_index, 'low(value)'] + self.data.v_df.at[min_index, 'high(value)'])/2)
+
+        return self.data.v_df
+
+
+
+
 
     # concurrent.futureで回すのでselfを使わないようにしているが、これでよいのだろうか？
     def __get_margin(self, data : Data, index_main : str, row_main : pd.Series, accuracy : int):
@@ -78,52 +156,16 @@ class Optimize:
                 target_v = vround((high_v + low_v)/2)
 
         upper_margin = vround(low_v)
-        upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v)
+        upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v, 4)
 
         return {"index" : index_main, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
-    
-    def plot(self, filename = None):
-        
-        # 全体フォントサイズ
-        plt.rcParams["font.size"] = 15
-        # color
-        plot_color = '#01b8aa'
-        # 図のサイズ
-        fig, axes = plt.subplots(figsize=(10,5), facecolor="White", ncols=2, sharey=True)
-        # タイトレイアウト(二つの図の隙間を埋める)
-        fig.tight_layout()
-        
-        df = self.margins.sort_index()
-        index = df.index
-        column0 = df['low(%)']
-        column1 = df['high(%)']
-
-        axes[0].barh(index, column0, align='center', color=plot_color)
-        axes[0].set_xlim(-100, 0)
-        axes[1].barh(index, column1, align='center', color=plot_color)
-        axes[1].set_xlim(0, 100)
-        axes[1].tick_params(axis='y', colors=plot_color)
-
-        plt.subplots_adjust(wspace=0, top=0.85, bottom=0.1, left=0.18, right=0.95)
-
-        if filename != None:
-            fig.savefig(filename)
-
-    def optimize(self):
-        min_margin = 100
-        min_index = None
-        for index, srs in self.margins.iterrows():
-            if not srs['fixed']:
-                if abs(srs['low(%)']) < min_margin or abs(srs['high(%)']) < min_margin:
-                    min_margin = min(abs(srs['low(%)']), abs(srs['high(%)']))
-                    min_index = index
 
 
 
 """
 def margin(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
 
-    # これ修正　None で帰ってきたとき　empty　は使えない
+    # これ修正 None で帰ってきたとき empty は使えない
     if data.default_result.empty:
         print("デフォルト値でのシュミレーションがされていません。")
         return None   

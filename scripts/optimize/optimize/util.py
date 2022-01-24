@@ -19,11 +19,10 @@ def stringToNum(s):
         return int(s)
 
     elif isfloat(s):
-        d = digit(s)
-        return round(float(s),d)
+        return float(s)
 
     else:
-        return None
+        raise ValueError("値が数値ではありません。")
 
 
 def vround(number : float, digit : int = 3) -> float:
