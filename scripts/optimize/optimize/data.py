@@ -2,11 +2,11 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
-from .judge import judge
+from .judge import judge, compareDataframe
 
 class Data:
     def __init__(self, raw_data : str, show : bool = False):
-        self.v_df , self.sim_data = self.__get_variable(raw=raw_data)
+        self.v_df, self.sim_data = self.__get_variable(raw=raw_data)
         self.time_start = float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
         self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
         self.squids = self.__get_judge_spuid(raw_data)
@@ -87,11 +87,11 @@ class Data:
                     if re.fullmatch('R',line[0:1],flags=re.IGNORECASE):
                         dic['element'] = 'R'
                         if dic['global'] == None:
-                            dic['global'] = 10
+                            dic['global'] = 8
                     elif re.fullmatch('L',line[0:1],flags=re.IGNORECASE):
                         dic['element'] = 'L'
                         if dic['global'] == None:
-                            dic['global'] = 10
+                            dic['global'] = 9
                     elif re.fullmatch('C',line[0:1],flags=re.IGNORECASE):
                         dic['element'] = 'C'
                         if dic['global'] == None:
@@ -103,7 +103,7 @@ class Data:
                     elif re.fullmatch('B',line[0:1],flags=re.IGNORECASE):
                         dic['element'] = 'B'
                         if dic['global'] == None:
-                            dic['global'] = 10
+                            dic['global'] = 5
                     break
             
             df.loc[char] = dic
@@ -144,7 +144,7 @@ class Data:
         def_sim_data = self.sim_data
         # すべてdefault value に置き換えてjudge
         for index, row in self.v_df.iterrows():            
-            def_sim_data = def_sim_data.replace(row['text'], str(row['default']))
+            def_sim_data = def_sim_data.replace("#("+index+")", str(row['value']))
         
         df = simulation(def_sim_data)
         if plot:
@@ -152,4 +152,22 @@ class Data:
             df.plot()
 
         self.default_result = judge(self.time_start, self.time_stop, df, self.squids, plot)
+
+    def test_simulation(self, plot= False):
+        tmp_sim_data = self.sim_data
+        # すべてdefault value に置き換えてjudge
+        for index, row in self.v_df.iterrows():            
+            tmp_sim_data = tmp_sim_data.replace("#("+index+")", str(row['value']))
+        # 動作したか確認
+        result_df = judge(self.time_start, self.time_stop, simulation(tmp_sim_data), self.squids)
+        return compareDataframe(result_df, self.default_result)
+    
+    def test_simulation(self, plot= False):
+        tmp_sim_data = self.sim_data
+        # すべてdefault value に置き換えてjudge
+        for index, row in self.v_df.iterrows():            
+            tmp_sim_data = tmp_sim_data.replace("#("+index+")", str(row['value']))
+        # 動作したか確認
+        result_df = judge(self.time_start, self.time_stop, simulation(tmp_sim_data), self.squids)
+        return compareDataframe(result_df, self.default_result)
         

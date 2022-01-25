@@ -3,7 +3,7 @@ from heapq import merge
 from optimize.margin_old import margin
 from .judge import judge, compareDataframe
 from .pyjosim import simulation
-from .data2 import Data
+from .data import Data
 from .util import vround
 import pandas as pd
 import concurrent.futures
