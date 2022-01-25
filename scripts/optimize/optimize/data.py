@@ -1,77 +1,143 @@
-import sys
 import re
-import util
+import pandas as pd
+from .util import stringToNum, isfloat, isint
+from .pyjosim import simulation
+from .judge import judge
 
+class Data:
+    def __init__(self, raw_data : str, show : bool = False):
+        self.v_df , self.sim_data = self.__get_variable(raw=raw_data)
+        self.time_start = float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
+        self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
+        self.squids = self.__get_judge_spuid(raw_data)
+        self.default_result = pd.DataFrame()
 
-# 先頭の文字列、Line
-def get_variable(text : str) -> list:
-    vlist = []
-    for l in re.findall('#.+\([\d\.]+\)', text):
-        a = re.split('\(', re.sub('#|\)','',l) )
-        vlist.append({'char': a[0], 'text': l, 'def': util.stringToNum(a[1])})
-    vlist_result = []
-    for v in vlist:
-        if v not in vlist_result:
-            vlist_result.append(v)
-    return vlist_result
+        if show:
+            print("--- List of variables to optimize ---")
+            print(self.v_df)
+            print('\n')
+            print("--- Period to calculate the initial value of bias ---")
+            print(self.time_start, " ~ ", self.time_stop)
+            print('\n')
+            print("--- SQUID used for judging the operation ---")
+            print(self.squids)
+            print('\n')
 
-def get_value(data : str, key : str) -> str:
-    line = next(filter(lambda x: re.search(key, x), data.splitlines()),None)
-    if line is None:
-        print(key + " の値が取得できません", file=sys.stderr)
-        sys.exit(1)
-    else:
-        r = re.split('=',line)
-        if len(r) == 2:
-            return r[1]
+    def __get_variable(self, raw : str) -> tuple:
+        df = pd.DataFrame(columns=['char','default','value','fix','lic','bc','global'])  
+        df.set_index('char', inplace=True)
+        vlist = re.findall('#.+\(.+\)',raw)
+
+        for raw_line in vlist:
+            li = re.sub('\s','',raw_line)
+            char = re.search('#.+\(',li, flags=re.IGNORECASE).group()
+            char = re.sub('#|\(','',char)
+            if char in df.index:
+                continue
+            
+            dic = {'default': None,'value': None,'fix': False,'lic': None,'bc': None,'global': None}
+            m = re.search('\(.+\)',li).group()
+            m = re.sub('\(|\)','',m)
+            spl = re.split(',',m)
+            if len(spl)==1:
+                if isfloat(spl[0]) or isint(spl[0]):
+                    num = stringToNum(spl[0])
+                    dic['default'] = num
+                    dic['value'] = num
+            for sp in spl:
+                val = re.split('=',sp)
+                if len(val) == 1:
+                    if isfloat(val[0]) or isint(val[0]):
+                        num = stringToNum(spl[0])
+                        dic['default'] = num
+                        dic['value'] = num
+                elif len(val) == 2:
+                    if re.fullmatch('v|value',val[0],flags=re.IGNORECASE):
+                        num = stringToNum(val[1])
+                        dic['default'] = num
+                        dic['value'] = num
+                    elif re.fullmatch('fix|fixed',val[0],flags=re.IGNORECASE):
+                        if re.fullmatch('true',val[1],flags=re.IGNORECASE):
+                            dic['fix'] = True
+                        else:
+                            dic['fix'] = False
+                    elif re.fullmatch('lic',val[0],flags=re.IGNORECASE):
+                        if re.fullmatch('(L|Ic|I)\d+',val[1],flags=re.IGNORECASE):
+                            dic['lic'] = val[1]
+                        else:
+                            raise ValueError("[ "+sp+" ]のLIc積の記述が読み取れません。")
+                    elif re.fullmatch('(β|b)c',val[0],flags=re.IGNORECASE):
+                        if re.fullmatch('(A|R)\d+',val[1],flags=re.IGNORECASE):
+                            dic['bc'] = val[1]
+                        else:
+                            raise ValueError("[ "+sp+" ]のbcの記述が読み取れません。")
+                    elif re.fullmatch('global',val[0],flags=re.IGNORECASE):
+                        num = stringToNum(val[1])
+                        dic['global'] = num
+                    else:
+                        raise ValueError("[ "+sp+" ]の記述が読み取れません。")
+                else:
+                    raise ValueError("[ "+sp+" ]の記述が読み取れません。")
+            
+            if dic['global'] == None:
+                for line in raw.splitlines():
+                    if raw_line in line:
+                        if re.fullmatch('R',line[0:1],flags=re.IGNORECASE):
+                            dic['global'] = 10
+                        elif re.fullmatch('L',line[0:1],flags=re.IGNORECASE):
+                            dic['global'] = 10
+                        elif re.fullmatch('C',line[0:1],flags=re.IGNORECASE):
+                            dic['global'] = 5
+                        elif re.fullmatch('V',line[0:1],flags=re.IGNORECASE):
+                            dic['global'] = 5
+                        elif re.fullmatch('B',line[0:1],flags=re.IGNORECASE):
+                            dic['global'] = 5
+                        break
+            
+            df.loc[char] = dic
+
+        
+        raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
+
+        for v in re.findall('#.+\(.+\)',raw):
+            char = re.search('#.+\(',v).group()
+            char = re.sub('#|\(','',char)
+            char = "#("+char+")"
+            raw = raw.replace(v, char)
+            
+        return df , raw
+
+    def __get_value(self, raw, key) -> str:
+        m_object = re.search(key+'=[\d\.\+e-]+', raw, flags=re.IGNORECASE)
+        if m_object:
+            return re.split('=', m_object.group())[1]
         else:
-            print(key + " の値が取得できません", file=sys.stderr)
-            sys.exit(1)
+            return None
 
-def get_judge_spuid(data : str) -> list:
-    squids = []
-    # 改行が一回だけ、すなわち連続されて記述されている(.print phase <要素>)の部分を取得
-    for m in re.finditer('\.print\s+phase.+\n.*\.print\s+phase\s+.+',data, flags=re.IGNORECASE):
-        rawdata = m.group()
-        subdata = re.sub('[\t\f\v ]|\.print\s+phase','',rawdata, flags=re.IGNORECASE)
-        spldata = re.split("\n",subdata)
-        if len(spldata) == 2:
-            squids.append({"1" : "P("+spldata[0]+")", "2" : "P("+spldata[1]+")"})
-        else:
-            print("ERROR")
-            print(rawdata)
-            print(subdata)
-            sys.exit()
-    # 取得結果の表示
-    print("\033[34mjudge squid data\033[0m")
-    print(squids)
-    return squids
+    def __get_judge_spuid(self, raw : str) -> list:
+        squids = []
+        tmp = []
+        for line in raw.splitlines():
+            m_obj = re.search('\.print\s+phase.+',line, flags=re.IGNORECASE)
+            if m_obj:
+                data_sub = re.sub('\s|\.print|phase','',m_obj.group(), flags=re.IGNORECASE)
+                tmp.append('P('+data_sub+')')
+            else:
+                if len(tmp)>0:
+                    squids.append(tmp)
+                    tmp = []
+        return squids
 
+    def default_simulation(self,  plot = False):
+        def_sim_data = self.sim_data
+        # すべてdefault value に置き換えてjudge
+        for index, row in self.v_df.iterrows():            
+            def_sim_data = def_sim_data.replace(row['text'], str(row['default']))
+        
+        df = simulation(def_sim_data)
+        if plot:
+            print("default 値でのシュミレーション結果")
+            df.plot()
 
-def get_main_data(data : str) -> tuple:
-    # 確認
-    assign = lambda x: None if x is None else x.group()
-    optimize_data = assign(re.search('\*+\s*optimize\s*\*+[\s\S]+$', data))
-    if optimize_data is None:
-        print("初期化されていません。", file=sys.stderr)
-        sys.exit(1)
-
-    # time1, time2 の取得
-    time1 = float(get_value(optimize_data, "EndTimeOfBiasRise"))
-    time2 = float(get_value(optimize_data, "StartTimeOfPulseInput"))
-    
-    # optimize の記述の削除したものの取得
-    sim_data = re.sub('\*+\s*optimize\s*\*+[\s\S]+$','', data)
-
-    # squids_list の取得
-    squids_list = get_judge_spuid(data)
-
-    # 変数リストの取得
-    variable_list = get_variable(data)
-
-    return {'time1': time1, 'time2': time2, 'input': sim_data, 'squids': squids_list, 'variables': variable_list}
-
-if __name__ == "__main__":
-    with open("/workspaces/docker-josim/files/hfqdff_lisan.inp",'r') as f:
-        raw = f.read()
-    get_variable(raw)
+        self.default_result = judge(self.time_start, self.time_stop, df, self.squids, plot)
+        
