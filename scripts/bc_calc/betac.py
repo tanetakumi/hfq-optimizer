@@ -1,6 +1,5 @@
 import math
 import re
-# dic = {'m':,'μ':,'n','p':}
 
 def betac(calc_type: str, area: float = None, Rshunt: float= None, Rsubgap: float = 100, Cap : float = 0.064e-12, Ic: float = 0.1e-3, betac: float = 1) -> float:
     phi = 2.068 * 10 ** -15

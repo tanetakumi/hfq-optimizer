@@ -24,7 +24,7 @@ class Data:
             print('\n')
 
     def __get_variable(self, raw : str) -> tuple:
-        df = pd.DataFrame(columns=['char','default','value','fix','lic','bc','global'])  
+        df = pd.DataFrame(columns=['char','default','value','element','fix','lic','bc','global'])  
         df.set_index('char', inplace=True)
         vlist = re.findall('#.+\(.+\)',raw)
 
@@ -35,7 +35,7 @@ class Data:
             if char in df.index:
                 continue
             
-            dic = {'default': None,'value': None,'fix': False,'lic': None,'bc': None,'global': None}
+            dic = {'default': None,'value': None,'element':None,'fix': False,'lic': None,'bc': None,'global': None}
             m = re.search('\(.+\)',li).group()
             m = re.sub('\(|\)','',m)
             spl = re.split(',',m)
@@ -62,15 +62,17 @@ class Data:
                         else:
                             dic['fix'] = False
                     elif re.fullmatch('lic',val[0],flags=re.IGNORECASE):
-                        if re.fullmatch('(L|Ic|I)\d+',val[1],flags=re.IGNORECASE):
-                            dic['lic'] = val[1]
-                        else:
-                            raise ValueError("[ "+sp+" ]のLIc積の記述が読み取れません。")
+                        dic['lic'] = val[1]
+                        # if re.fullmatch('(L|Ic|I)\d+',val[1],flags=re.IGNORECASE):
+                        #     dic['lic'] = val[1]
+                        # else:
+                        #     raise ValueError("[ "+sp+" ]のLIc積の記述が読み取れません。")
                     elif re.fullmatch('(β|b)c',val[0],flags=re.IGNORECASE):
-                        if re.fullmatch('(A|R)\d+',val[1],flags=re.IGNORECASE):
-                            dic['bc'] = val[1]
-                        else:
-                            raise ValueError("[ "+sp+" ]のbcの記述が読み取れません。")
+                        dic['bc'] = val[1]
+                        # if re.fullmatch('(A|R)\d+',val[1],flags=re.IGNORECASE):
+                        #     dic['bc'] = val[1]
+                        # else:
+                        #     raise ValueError("[ "+sp+" ]のbcの記述が読み取れません。")
                     elif re.fullmatch('global',val[0],flags=re.IGNORECASE):
                         num = stringToNum(val[1])
                         dic['global'] = num
@@ -79,23 +81,33 @@ class Data:
                 else:
                     raise ValueError("[ "+sp+" ]の記述が読み取れません。")
             
-            if dic['global'] == None:
-                for line in raw.splitlines():
-                    if raw_line in line:
-                        if re.fullmatch('R',line[0:1],flags=re.IGNORECASE):
+            # if dic['global'] == None:
+            for line in raw.splitlines():
+                if raw_line in line:
+                    if re.fullmatch('R',line[0:1],flags=re.IGNORECASE):
+                        dic['element'] = 'R'
+                        if dic['global'] == None:
                             dic['global'] = 10
-                        elif re.fullmatch('L',line[0:1],flags=re.IGNORECASE):
+                    elif re.fullmatch('L',line[0:1],flags=re.IGNORECASE):
+                        dic['element'] = 'L'
+                        if dic['global'] == None:
                             dic['global'] = 10
-                        elif re.fullmatch('C',line[0:1],flags=re.IGNORECASE):
+                    elif re.fullmatch('C',line[0:1],flags=re.IGNORECASE):
+                        dic['element'] = 'C'
+                        if dic['global'] == None:
                             dic['global'] = 5
-                        elif re.fullmatch('V',line[0:1],flags=re.IGNORECASE):
+                    elif re.fullmatch('V',line[0:1],flags=re.IGNORECASE):
+                        dic['element'] = 'V'
+                        if dic['global'] == None:
                             dic['global'] = 5
-                        elif re.fullmatch('B',line[0:1],flags=re.IGNORECASE):
-                            dic['global'] = 5
-                        break
+                    elif re.fullmatch('B',line[0:1],flags=re.IGNORECASE):
+                        dic['element'] = 'B'
+                        if dic['global'] == None:
+                            dic['global'] = 10
+                    break
             
             df.loc[char] = dic
-
+        # dataframe の検査が必要かもしれない
         
         raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
 

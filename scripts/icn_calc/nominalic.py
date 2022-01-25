@@ -29,10 +29,25 @@ def func_igmax(A,B):
         print(B, ", ", max_y)
         return vmax
 
-if __name__ == "__main__":
-    L = 3.5 * 10**(-12)
-    Ic = 0.0001
-    phi = 2.07 * 10 ** (-15)
-    result = func_igmax(0, (L*Ic)/phi)
-    print("nominal ic")        
-    print('{:.8f}'.format(result*Ic))
+def igic(x: float, licphi: float, exphi: float):
+    if licphi < 1.0e-7:
+        return 2*math.cos(exphi*math.pi)
+    if x < 1.0e-7:
+        return 0
+    else:
+        tmp1 = 2*(x - exphi * math.pi)/(licphi * math.pi)
+        tmp2 = (tmp1**2) * (1/(math.tan(x)**2))
+        tmp3 = 4 * math.cos(x)**2 - tmp2
+        if tmp3 < 0:
+            return 0
+        else:
+            return math.sqrt(tmp3)
+
+def igic_max(licphi: float, exphi: float, accuracy: int = 1000):
+    max = 0
+    for i in range(1,accuracy):
+        x = (i/accuracy)*math.pi *2
+        val = igic(x, licphi, exphi)
+        if val > max:
+            max = val
+    return max
