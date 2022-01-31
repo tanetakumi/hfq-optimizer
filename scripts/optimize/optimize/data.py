@@ -1,20 +1,24 @@
+from email.policy import default
 import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
-from .judge import judge, compareDataframe
+from .judge import judge, compareDataframe, operation_judge
+from .util import vround
+from .calculator import betac
+import numpy as np
 
 class Data:
     def __init__(self, raw_data : str, show : bool = False):
-        self.v_df, self.sim_data = self.__get_variable(raw=raw_data)
-        self.time_start = float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
+        self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
+        self.time_start= float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
         self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
         self.squids = self.__get_judge_spuid(raw_data)
         self.default_result = pd.DataFrame()
 
         if show:
             print("--- List of variables to optimize ---")
-            print(self.v_df)
+            print(self.vdf)
             print('\n')
             print("--- Period to calculate the initial value of bias ---")
             print(self.time_start, " ~ ", self.time_stop)
@@ -24,38 +28,41 @@ class Data:
             print('\n')
 
     def __get_variable(self, raw : str) -> tuple:
-        df = pd.DataFrame(columns=['char','default','value','element','fix','bc','lic','dp','dpv'])  
+        df = pd.DataFrame(columns=['char','def','main','sub','element','fix','bc','lic','dp','dpv','tmp'])  
         df.set_index('char', inplace=True)
-        vlist = re.findall('#.+\(.+\)',raw)
+        vlist = re.findall('#.+\(.+?\)',raw)
 
         for raw_line in vlist:
             li = re.sub('\s','',raw_line)
-            char = re.search('#.+\(',li, flags=re.IGNORECASE).group()
+            char = re.search('#.+?\(',li, flags=re.IGNORECASE).group()
             char = re.sub('#|\(','',char)
             if char in df.index:
                 continue
             
-            dic = {'default': None,'value': None,'element':None,'fix': False,'bc': None,'lic': None,'dp': True,'dpv': None}
-            m = re.search('\(.+\)',li).group()
+            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False,'bc': None,'lic': None,'dp': True,'dpv': None,'tmp': 0}
+            m = re.search('\(.+?\)',li).group()
             m = re.sub('\(|\)','',m)
             spl = re.split(',',m)
             if len(spl)==1:
                 if isfloat(spl[0]) or isint(spl[0]):
                     num = stringToNum(spl[0])
-                    dic['default'] = num
-                    dic['value'] = num
+                    dic['def'] = num
+                    dic['main'] = num
+                    dic['sub'] = num
             for sp in spl:
                 val = re.split('=',sp)
                 if len(val) == 1:
                     if isfloat(val[0]) or isint(val[0]):
                         num = stringToNum(spl[0])
-                        dic['default'] = num
-                        dic['value'] = num
+                        dic['def'] = num
+                        dic['main'] = num
+                        dic['sub'] = num
                 elif len(val) == 2:
                     if re.fullmatch('v|value',val[0],flags=re.IGNORECASE):
                         num = stringToNum(val[1])
-                        dic['default'] = num
-                        dic['value'] = num
+                        dic['def'] = num
+                        dic['main'] = num
+                        dic['sub'] = num
                     elif re.fullmatch('fix|fixed',val[0],flags=re.IGNORECASE):
                         if re.fullmatch('true',val[1],flags=re.IGNORECASE):
                             dic['fix'] = True
@@ -104,8 +111,8 @@ class Data:
         
         raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
 
-        for v in re.findall('#.+\(.+\)',raw):
-            char = re.search('#.+\(',v).group()
+        for v in re.findall('#.+\(.+?\)',raw):
+            char = re.search('#.+?\(',v).group()
             char = re.sub('#|\(','',char)
             char = "#("+char+")"
             raw = raw.replace(v, char)
@@ -135,10 +142,11 @@ class Data:
 
     def default_simulation(self,  plot = False):
         def_sim_data = self.sim_data
-        # すべてdefault value に置き換えてjudge
-        for index, row in self.v_df.iterrows():            
-            def_sim_data = def_sim_data.replace("#("+index+")", str(row['value']))
+        # シュミレーションデータの作成
+        for index in self.vdf.index:
+            def_sim_data = def_sim_data.replace('#('+index+')', str(self.vdf.at[index, 'def']))
         
+        print(def_sim_data)
         df = simulation(def_sim_data)
         if plot:
             print("default 値でのシュミレーション結果")
@@ -146,21 +154,5 @@ class Data:
 
         self.default_result = judge(self.time_start, self.time_stop, df, self.squids, plot)
 
-    def test_simulation(self, plot= False):
-        tmp_sim_data = self.sim_data
-        # すべてdefault value に置き換えてjudge
-        for index, row in self.v_df.iterrows():            
-            tmp_sim_data = tmp_sim_data.replace("#("+index+")", str(row['value']))
-        # 動作したか確認
-        result_df = judge(self.time_start, self.time_stop, simulation(tmp_sim_data), self.squids)
-        return compareDataframe(result_df, self.default_result)
     
-    def test_simulation(self, plot= False):
-        tmp_sim_data = self.sim_data
-        # すべてdefault value に置き換えてjudge
-        for index, row in self.v_df.iterrows():            
-            tmp_sim_data = tmp_sim_data.replace("#("+index+")", str(row['value']))
-        # 動作したか確認
-        result_df = judge(self.time_start, self.time_stop, simulation(tmp_sim_data), self.squids)
-        return compareDataframe(result_df, self.default_result)
-        
+

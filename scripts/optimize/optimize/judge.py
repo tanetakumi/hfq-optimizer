@@ -1,5 +1,7 @@
 import pandas as pd
 import math
+from .pyjosim import simulation
+
 
 def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list, plot = False) -> pd.DataFrame:
 
@@ -46,4 +48,7 @@ def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame) -> bool:
 
 
 
+def operation_judge(time1 : float, time2 : float, data : str, squids : list, df_result : pd.DataFrame):
+    result_df = judge(time1, time2, simulation(data), squids)
+    return compareDataframe(result_df, df_result) 
 
