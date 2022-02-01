@@ -7,15 +7,16 @@ import pandas as pd
 import concurrent.futures
 import matplotlib.pyplot as plt
 
-def optimize(data : Data):
-
+def optimize(data : Data, directory : str):
     # 今のところは10回の回数制限とbreakで処理
     # 後々、制限を変更したい
-    pre_min_margin = None
+    pre_min_index = None
     for i in range(10):
+        print(str(i)+"回目の最適化開始")
+        print(data.vdf)
         margins = get_margins(data)
-        print(margins)
-        plot(margins)
+        # print(margins)
+        plot(margins, directory+"/"+str(i)+".png")
         min_margin = 100
         min_index = None
         for element in margins.index:
@@ -24,15 +25,16 @@ def optimize(data : Data):
                     min_margin = min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)']))
                     min_index = element
         
-        print("minumum margin : ", min_index, "  ", min_margin)
-        if pre_min_margin == min_margin:
+        print("最小マージン : ", min_index, "  ", min_margin)
+        
+        if pre_min_index == min_index:
             break
-        pre_min_margin = min_margin
+        pre_min_index = min_index
 
         data.vdf.at[min_index,'main'] = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
+        print(str(i)+"回目の最適化終了")
 
-
-def get_margins(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+def get_margins(data : Data, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
     margin_columns_list = ['fix','low(value)', 'low(%)', 'high(value)', 'high(%)']
 
     futures = []
@@ -105,7 +107,6 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
     # デフォルト値の抽出
     default_v = vdf.at[target_ele,'main']
     fix_para = vdf.at[target_ele,'fix']
-    vdf.at[target_ele,'tmp'] = 1
 
     # lower    
     high_v = default_v
@@ -113,8 +114,12 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
     target_v = (high_v + low_v)/2
 
     for i in range(accuracy):
+
         vdf['sub'] = vdf['main']
+        vdf['tmp'] = 0
+        vdf.at[target_ele,'tmp'] = 1
         vdf.at[target_ele,'sub'] = target_v
+        
         if __filtered_simulation(data, vdf):
             high_v = target_v
             target_v = (high_v + low_v)/2
@@ -131,8 +136,12 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
     target_v = default_v * 2
 
     for i in range(accuracy):
+
         vdf['sub'] = vdf['main']
+        vdf['tmp'] = 0
+        vdf.at[target_ele,'tmp'] = 1
         vdf.at[target_ele,'sub'] = target_v
+
         if __filtered_simulation(data, vdf):
             if high_v == 0:
                 low_v = target_v
@@ -147,14 +156,15 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
     upper_margin_rate = (upper_margin - default_v) * 100 / default_v
 
     del vdf
+    
 
     return {"index" : target_ele, "result" : (fix_para, lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
 
 def __filtered_simulation(data : Data, df : pd.DataFrame):
     tmp_sim_data = data.sim_data
-    __betac_filter(df)
-    __lic_filter(df)
-    __scatter_filter(df)
+    # __betac_filter(df)
+    # __lic_filter(df)
+    # __scatter_filter(df)
     for index in df.index:
         tmp_sim_data = tmp_sim_data.replace('#('+index+')', str(df.at[index, 'sub']))
     return  operation_judge(data.time_start, data.time_stop, tmp_sim_data, data.squids, data.default_result)
@@ -162,7 +172,7 @@ def __filtered_simulation(data : Data, df : pd.DataFrame):
 
 def __betac_filter(df : pd.DataFrame):
     for index in df.index:
-        if df.at[index,'tmp'] > 0 and df.at[index,'bc'] != None:
+        if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 2 and df.at[index,'bc'] != None:
             for tmp_index in df.index:
                 # 自身と同じインデックスはスキップ
                 if tmp_index == index:
@@ -179,10 +189,11 @@ def __betac_filter(df : pd.DataFrame):
                     else:
                         raise ValueError("element1 ",df.at[index,'element'],"  element2 ",df.at[tmp_index,'element'])
                     break
+            break
 
 def __lic_filter(df : pd.DataFrame):
     for index in df.index:
-        if df.at[index,'tmp'] > 0 and df.at[index,'lic'] != None:
+        if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 3 and df.at[index,'lic'] != None:
             for tmp_index in df.index:
                 # 自身と同じインデックスはスキップ
                 if tmp_index == index:
