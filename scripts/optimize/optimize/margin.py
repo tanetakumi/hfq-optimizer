@@ -32,9 +32,16 @@ def optimize(data : Data, directory : str):
         pre_min_index = min_index
 
         data.vdf.at[min_index,'main'] = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
-        print(str(i)+"回目の最適化終了")
 
-def get_margins(data : Data, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
+        data.vdf.at[min_index,'tmp'] = 1
+        __betac_filter(data.vdf, main=True)
+        __lic_filter(data.vdf, main=True)
+        data.vdf['tmp'] = 0
+
+        print(str(i)+"回目の最適化終了")
+    
+
+def get_margins(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
     margin_columns_list = ['fix','low(value)', 'low(%)', 'high(value)', 'high(%)']
 
     futures = []
@@ -76,8 +83,7 @@ def plot(vdf, filename = None):
                 index_color.append('red')
             else:
                 index_color.append(plot_color)
-        # --- ---
-
+        # ------
 
         # 図のサイズ　sharey:グラフの軸の共有(y軸)
         fig, axes = plt.subplots(figsize=(10,len(index)/3),ncols=2, sharey=True)
@@ -99,6 +105,8 @@ def plot(vdf, filename = None):
 
         if filename != None:
             fig.savefig(filename)
+
+        
 
 def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
 
@@ -162,15 +170,19 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
 
 def __filtered_simulation(data : Data, df : pd.DataFrame):
     tmp_sim_data = data.sim_data
-    # __betac_filter(df)
-    # __lic_filter(df)
-    # __scatter_filter(df)
+    __betac_filter(df)
+    __lic_filter(df)
+    __scatter_filter(df)
     for index in df.index:
         tmp_sim_data = tmp_sim_data.replace('#('+index+')', str(df.at[index, 'sub']))
     return  operation_judge(data.time_start, data.time_stop, tmp_sim_data, data.squids, data.default_result)
 
 
-def __betac_filter(df : pd.DataFrame):
+def __betac_filter(df : pd.DataFrame, main : bool = False):
+    data_type = 'sub'
+    if main:
+        data_type = 'main'
+
     for index in df.index:
         if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 2 and df.at[index,'bc'] != None:
             for tmp_index in df.index:
@@ -181,17 +193,23 @@ def __betac_filter(df : pd.DataFrame):
                 if df.at[tmp_index,'bc'] == df.at[index,'bc']:
                     # R と B の関係であるか確認
                     if df.at[index,'element'] == 'R' and df.at[tmp_index,'element'] == 'B':
-                        df.at[tmp_index,'sub'] = betac('area',Rshunt=df.at[index,'sub'])
+                        df.at[tmp_index,data_type] = betac('area',Rshunt=df.at[index,data_type])
                         df.at[tmp_index,'tmp'] = 2
                     elif df.at[index,'element'] == 'B' and df.at[tmp_index,'element'] == 'R':
-                        df.at[tmp_index,'sub'] = betac('shunt',area=df.at[index,'sub'])
+                        df.at[tmp_index,data_type] = betac('shunt',area=df.at[index,data_type])
                         df.at[tmp_index,'tmp'] = 2
                     else:
                         raise ValueError("element1 ",df.at[index,'element'],"  element2 ",df.at[tmp_index,'element'])
                     break
             break
 
-def __lic_filter(df : pd.DataFrame):
+def __lic_filter(df : pd.DataFrame, main : bool = False):
+    data_type = 'sub'
+    data_type2 = 'main'
+    if main:
+        data_type = 'main'
+        data_type2 = 'def'
+
     for index in df.index:
         if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 3 and df.at[index,'lic'] != None:
             for tmp_index in df.index:
@@ -202,10 +220,10 @@ def __lic_filter(df : pd.DataFrame):
                 if df.at[tmp_index,'lic'] == df.at[index,'lic']:
                     # R と B の関係であるか確認
                     if df.at[index,'element'] == 'L' and df.at[tmp_index,'element'] == 'B':
-                        df.at[tmp_index,'sub'] = df.at[index,'main'] * df.at[tmp_index,'main'] / df.at[index,'sub']
+                        df.at[tmp_index, data_type] = df.at[index,data_type2] * df.at[tmp_index,data_type2] / df.at[index,data_type]
                         df.at[tmp_index,'tmp'] = 3
                     elif df.at[index,'element'] == 'B' and df.at[tmp_index,'element'] == 'L':
-                        df.at[tmp_index,'sub'] = df.at[index,'main'] * df.at[tmp_index,'main'] / df.at[index,'sub']
+                        df.at[tmp_index, data_type] = df.at[index,data_type2] * df.at[tmp_index,data_type2] / df.at[index,data_type]
                         df.at[tmp_index,'tmp'] = 3
                     else:
                         raise ValueError("(element1,index1)",df.at[index,'element'],index,"  element2 ",df.at[tmp_index,'element'])
