@@ -118,7 +118,7 @@ class Optimize:
             if index_main != index_tmp:
                 sim_data = sim_data.replace(row_tmp['text'], str(row_tmp['value']))
 
-        # lower
+        # lower ==================================================
         default_v = row_main['value']
         high_v = default_v
         low_v = 0
@@ -133,11 +133,11 @@ class Optimize:
             else:
                 low_v = target_v
                 target_v = vround((high_v + low_v)/2)
-
+        # lower result ---
         lower_margin = vround(high_v)
         lower_margin_rate = vround((lower_margin - default_v) * 100 / default_v)
 
-        # upper
+        # upper ==================================================
         high_v = 0
         low_v = default_v
         target_v = vround(default_v * 2)
@@ -154,7 +154,7 @@ class Optimize:
             else:
                 high_v = target_v
                 target_v = vround((high_v + low_v)/2)
-
+        # upper result ---
         upper_margin = vround(low_v)
         upper_margin_rate = vround((upper_margin - default_v) * 100 / default_v, 4)
 

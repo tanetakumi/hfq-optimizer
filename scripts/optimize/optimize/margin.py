@@ -1,53 +1,81 @@
 import copy
-from .judge import operation_judge
-from .calculator import betac
+from .judge import operation_judge ,operation_judge2
+from .calculator import betac, shunt_calc
 from .data import Data
 import numpy as np
 import pandas as pd
 import concurrent.futures
 import matplotlib.pyplot as plt
 
+import shutil
+import os
+
 def optimize(data : Data, directory : str):
     # 今のところは10回の回数制限とbreakで処理
     # 後々、制限を変更したい
-    pre_min_index = None
-    for i in range(10):
-        print(str(i)+"回目の最適化開始")
-        print(data.vdf)
-        margins = get_margins(data)
-        # print(margins)
-        plot(margins, directory+"/"+str(i)+".png")
-        min_margin = 100
-        min_index = None
-        for element in margins.index:
-            if not data.vdf.at[element,'fix']:
-                if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
-                    min_margin = min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)']))
-                    min_index = element
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
+    os.mkdir(directory)
+
+    for j in range(15):
+        #　5回のばらつきシュミレーション
+        copied_data = copy.deepcopy(data)
+
+        pre_min_index = None
+        for i in range(10):
+            print("ばらつき"+str(j)+" : "+str(i)+"回目の最適化開始")
+
+            if j > 0:
+                scatter_apply(copied_data.vdf)
+
+            margins = get_margins(copied_data)
+
+            plot(margins, directory+"/"+str(j)+"-"+str(i)+".png")
+            copied_data.vdf.to_csv(directory+"/"+str(j)+"-"+str(i)+"value.csv")
+
+            min_margin = 100
+            min_index = None
+            for element in margins.index:
+                if not copied_data.vdf.at[element,'fix']:
+                    # 最小マージンの素子を探す。
+                    if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
+                        min_margin = min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)']))
+                        min_index = element
+            
+            print("最小マージン : ", min_index, "  ", min_margin)
+
+            with open(directory+"/"+str(j)+"-"+str(i)+".txt", 'w') as f:
+                f.write("最小マージン : "+ str(min_index)+ "  "+ str(min_margin)+'\n') 
+
+            # 同じものが最適化対象になってしまったら終了
+            if pre_min_index == min_index:
+                print("ばらつき"+str(j)+" : "+str(i)+"回目の最適化終了")
+                break
+
+            # 最小マージンが0であれば終了
+            if min_margin == 0:
+                print("ばらつき"+str(j)+" : "+str(i)+"回目の最適化終了")
+                break
+
+            pre_min_index = min_index
+
+            # 最大マージンと最小マージンの中間点を次の最適化対象にする。
+            copied_data.vdf.at[min_index,'main'] = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
+
+            print("ばらつき"+str(j)+" : "+str(i)+"回目の最適化終了")
         
-        print("最小マージン : ", min_index, "  ", min_margin)
-        
-        if pre_min_index == min_index:
-            break
-        pre_min_index = min_index
 
-        data.vdf.at[min_index,'main'] = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
 
-        data.vdf.at[min_index,'tmp'] = 1
-        __betac_filter(data.vdf, main=True)
-        __lic_filter(data.vdf, main=True)
-        data.vdf['tmp'] = 0
-
-        print(str(i)+"回目の最適化終了")
     
 
-def get_margins(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+def get_margins(data : Data, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
     margin_columns_list = ['fix','low(value)', 'low(%)', 'high(value)', 'high(%)']
 
     futures = []
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
 
     for index in data.vdf.index:
+        
         future = executor.submit(__get_margin, data, index, accuracy)
         futures.append(future)
 
@@ -60,9 +88,6 @@ def get_margins(data : Data, accuracy : int = 8, thread : int = 16) -> pd.DataFr
         # variables dataframeに追加
         margin_result.loc[result_dic["index"]] = result_dic["result"]
 
-    # 現在のcolumns listを落として、今回の結果を入力する
-    # tmp_sim_data.v_df.drop(columns = margin_columns_list, inplace=True, errors='ignore')
-    # margin_df = pd.merge(margin_df, margin_result, left_index=True, right_index=True)
     
     return margin_result
 
@@ -100,22 +125,22 @@ def plot(vdf, filename = None):
         axes[1].tick_params(labelsize=15)
         axes[1].tick_params(axis='y', colors=plot_color)  # 1 グラフのメモリ軸の色をプロットの色と合わせて見れなくする
 
-        # plt.subplots_adjust(wspace=0, top=0.85, bottom=0.1, left=0.18, right=0.95)
-        
-
         if filename != None:
             fig.savefig(filename)
+            plt.close(fig)
 
         
 
 def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
-
-    vdf : pd.DataFrame = copy.copy(data.vdf)
+    
+    copied_df : pd.DataFrame = copy.deepcopy(data.vdf)
 
     # デフォルト値の抽出
-    default_v = vdf.at[target_ele,'main']
-    fix_para = vdf.at[target_ele,'fix']
+    default_v = copied_df.at[target_ele,'sub']
+    fix_para = copied_df.at[target_ele,'fix']
 
+    if not __filtered_simulation(data, copied_df):
+        return {"index" : target_ele, "result" : (fix_para, 0, 0, 0, 0)}
     # lower    
     high_v = default_v
     low_v = 0
@@ -123,12 +148,9 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
 
     for i in range(accuracy):
 
-        vdf['sub'] = vdf['main']
-        vdf['tmp'] = 0
-        vdf.at[target_ele,'tmp'] = 1
-        vdf.at[target_ele,'sub'] = target_v
-        
-        if __filtered_simulation(data, vdf):
+        # copied_df['sub'] = copied_df['main']
+        copied_df.at[target_ele,'sub'] = target_v
+        if __filtered_simulation(data, copied_df):
             high_v = target_v
             target_v = (high_v + low_v)/2
         else:
@@ -145,12 +167,10 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
 
     for i in range(accuracy):
 
-        vdf['sub'] = vdf['main']
-        vdf['tmp'] = 0
-        vdf.at[target_ele,'tmp'] = 1
-        vdf.at[target_ele,'sub'] = target_v
+        # copied_df['sub'] = copied_df['main']
+        copied_df.at[target_ele,'sub'] = target_v
 
-        if __filtered_simulation(data, vdf):
+        if __filtered_simulation(data, copied_df):
             if high_v == 0:
                 low_v = target_v
                 break
@@ -163,94 +183,31 @@ def __get_margin(data : Data, target_ele : str, accuracy : int = 7):
     upper_margin = low_v
     upper_margin_rate = (upper_margin - default_v) * 100 / default_v
 
-    del vdf
-    
+    del copied_df
 
     return {"index" : target_ele, "result" : (fix_para, lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
 
 def __filtered_simulation(data : Data, df : pd.DataFrame):
     tmp_sim_data = data.sim_data
-    __betac_filter(df)
-    __lic_filter(df)
-    __scatter_filter(df)
     for index in df.index:
         tmp_sim_data = tmp_sim_data.replace('#('+index+')', str(df.at[index, 'sub']))
-    return  operation_judge(data.time_start, data.time_stop, tmp_sim_data, data.squids, data.default_result)
-
-
-def __betac_filter(df : pd.DataFrame, main : bool = False):
-    data_type = 'sub'
-    if main:
-        data_type = 'main'
-
-    for index in df.index:
-        if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 2 and df.at[index,'bc'] != None:
-            for tmp_index in df.index:
-                # 自身と同じインデックスはスキップ
-                if tmp_index == index:
-                    continue
-                # tag　が一致したとき
-                if df.at[tmp_index,'bc'] == df.at[index,'bc']:
-                    # R と B の関係であるか確認
-                    if df.at[index,'element'] == 'R' and df.at[tmp_index,'element'] == 'B':
-                        df.at[tmp_index,data_type] = betac('area',Rshunt=df.at[index,data_type])
-                        df.at[tmp_index,'tmp'] = 2
-                    elif df.at[index,'element'] == 'B' and df.at[tmp_index,'element'] == 'R':
-                        df.at[tmp_index,data_type] = betac('shunt',area=df.at[index,data_type])
-                        df.at[tmp_index,'tmp'] = 2
-                    else:
-                        raise ValueError("element1 ",df.at[index,'element'],"  element2 ",df.at[tmp_index,'element'])
-                    break
-            break
-
-def __lic_filter(df : pd.DataFrame, main : bool = False):
-    data_type = 'sub'
-    data_type2 = 'main'
-    if main:
-        data_type = 'main'
-        data_type2 = 'def'
-
-    for index in df.index:
-        if df.at[index,'tmp'] > 0 and df.at[index,'tmp'] != 3 and df.at[index,'lic'] != None:
-            for tmp_index in df.index:
-                # 自身と同じインデックスはスキップ
-                if tmp_index == index:
-                    continue
-                # tag　が一致したとき
-                if df.at[tmp_index,'lic'] == df.at[index,'lic']:
-                    # R と B の関係であるか確認
-                    if df.at[index,'element'] == 'L' and df.at[tmp_index,'element'] == 'B':
-                        df.at[tmp_index, data_type] = df.at[index,data_type2] * df.at[tmp_index,data_type2] / df.at[index,data_type]
-                        df.at[tmp_index,'tmp'] = 3
-                    elif df.at[index,'element'] == 'B' and df.at[tmp_index,'element'] == 'L':
-                        df.at[tmp_index, data_type] = df.at[index,data_type2] * df.at[tmp_index,data_type2] / df.at[index,data_type]
-                        df.at[tmp_index,'tmp'] = 3
-                    else:
-                        raise ValueError("(element1,index1)",df.at[index,'element'],index,"  element2 ",df.at[tmp_index,'element'])
-                    break
-
-def __scatter_filter(df : pd.DataFrame):
-    for index in df.index:
-        if df.at[index,'dp']:
-            tmp = df.at[index,'sub']
-            dpv = df.at[index,'dpv']
-            df.at[index,'sub'] = np.random.normal(tmp,tmp*dpv/200)
+    
+    return  operation_judge2(data.time_start, data.time_stop, tmp_sim_data, data.squids, data.default_result)
 
 
 
+def shunt_apply(vdf : pd.DataFrame):
+        for index in vdf.index:
+            if vdf.at[index, 'shunt'] != None:
+                shunt_index = vdf.at[index, 'shunt']
+                vdf.at[shunt_index, 'sub'] = shunt_calc(area=vdf.at[index, 'sub']) 
 
-
-
-
-
-
-
-
-
-
-
-
-
+def scatter_apply(vdf : pd.DataFrame):
+    for index in vdf.index:
+        if vdf.at[index,'dp']:
+            tmp = vdf.at[index,'sub']
+            dpv = vdf.at[index,'dpv']
+            vdf.at[index,'sub'] = np.random.normal(tmp,tmp*dpv/200)
 
 
 

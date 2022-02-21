@@ -3,24 +3,11 @@ import numpy as np
 from mpl_toolkits.mplot3d import axes3d    # <- 明示的には使わないが、インポートしておく必要がある。
 from matplotlib.animation import FuncAnimation
 import matplotlib
-matplotlib.use('TkAgg')
+ # matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-def igic(x: float, licphi: float, exphi: float):
-    if licphi < 1.0e-10:
-        return 2*math.sin(exphi*math.pi)
-    if x < 1.0e-10:
-        return 0
-    else:
-        tmp1 = 2*(x - exphi * math.pi)/(licphi * math.pi)
-        tmp2 = (tmp1**2) * (1/(math.tan(x)**2))
-        tmp3 = 4 * math.cos(x)**2 - tmp2
-        if tmp3 < 0:
-            return 0
-        else:
-            return math.sqrt(tmp3)
 
-def igic2(x: float, licphi: float, exphi: float):
+def igic(x: float, licphi: float, exphi: float):
     if licphi < 1.0e-10:
         return 2*math.fabs(math.sin(exphi*math.pi))
     else:
@@ -36,7 +23,7 @@ def igic_max(licphi: float, exphi: float, accuracy: int = 1000):
     max = 0
     for i in range(1,accuracy):
         x = (i/accuracy)*math.pi *2
-        val = igic2(x, licphi, exphi)
+        val = igic(x, licphi, exphi)
         if val > max:
             max = val
     return max

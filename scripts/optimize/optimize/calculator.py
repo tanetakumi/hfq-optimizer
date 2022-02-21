@@ -35,3 +35,10 @@ def betac(calc_type: str, area: float = None, Rshunt: float= None, Rsubgap: floa
         raise ValueError('calc_type(計算タイプ)の値が読み取れません。')
 
 
+def shunt_calc(area: float = None, Rsubgap: float = 100, Cap : float = 0.064e-12, Ic: float = 0.1e-3, betac: float = 1) -> float:
+    phi = 2.068 * 10 ** -15
+    _Cap = Cap * area
+    _Ic = Ic * area
+    _Rsubgap = Rsubgap / area
+    denomi = math.sqrt(2 * math.pi * _Ic * _Cap / (phi * betac)) - 1/_Rsubgap
+    return 1/denomi

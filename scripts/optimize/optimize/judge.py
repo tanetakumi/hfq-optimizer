@@ -39,16 +39,41 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list
                 flag = flag - 1
                 resultframe = resultframe.append({'time':srs.index[i], 'element':column_name, 'phase':flag},ignore_index=True)
 
+    resultframe.sort_values(['element', 'phase'], inplace=True)
     return resultframe
 
 
-def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame) -> bool:
-    return df1.sort_values(['phase', 'time']).drop('time', axis=1).reset_index(drop=True)\
-        .equals(df2.sort_values(['phase', 'time']).drop('time', axis=1).reset_index(drop=True))
+def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame, delay_time : float = 2.0e-10) -> bool:
+    print(df1)
+    print(df2)
+    for index in df1.index:
+        if df1.at[index, 'element'] == df2.at[index, 'element'] and df1.at[index, 'phase'] == df2.at[index, 'phase']:
+            time_df1 = df1.at[index, 'time']
+            time_df2 = df2.at[index, 'time']
+            if time_df2 < time_df1 - delay_time or time_df1 + delay_time < time_df2:
+                return False
+        else:
+            return False
+    return True
 
 
 
 def operation_judge(time1 : float, time2 : float, data : str, squids : list, df_result : pd.DataFrame):
     result_df = judge(time1, time2, simulation(data), squids)
-    return compareDataframe(result_df, df_result) 
+    return compareDataframe(df_result, result_df) 
 
+def operation_judge2(time1 : float, time2 : float, data : str, squids : list, default_result : pd.DataFrame, delay_time : float = 2.0e-10):
+    res = judge(time1, time2, simulation(data), squids)
+    if default_result.drop('time', axis=1).equals(res.drop('time', axis=1)):
+        for index in default_result.index:
+            if default_result.at[index, 'element'] == res.at[index, 'element'] and default_result.at[index, 'phase'] == res.at[index, 'phase']:
+                time_df1 = default_result.at[index, 'time']
+                time_df2 = res.at[index, 'time']
+                if time_df2 < time_df1 - delay_time or time_df1 + delay_time < time_df2:
+                    return False
+            else:
+                return False
+        return True    
+    else:
+        return False
+    
