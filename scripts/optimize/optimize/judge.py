@@ -43,7 +43,7 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list
     return resultframe
 
 
-def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame, delay_time : float = 2.0e-10) -> bool:
+def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame, delay_time : float = 1.0e-10) -> bool:
     print(df1)
     print(df2)
     for index in df1.index:
@@ -60,9 +60,10 @@ def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame, delay_time : float 
 
 def operation_judge(time1 : float, time2 : float, data : str, squids : list, df_result : pd.DataFrame):
     result_df = judge(time1, time2, simulation(data), squids)
-    return compareDataframe(df_result, result_df) 
+    return compareDataframe(df_result, result_df)
 
-def operation_judge2(time1 : float, time2 : float, data : str, squids : list, default_result : pd.DataFrame, delay_time : float = 2.0e-10):
+
+def operation_judge2(time1 : float, time2 : float, data : str, squids : list, default_result : pd.DataFrame, delay_time : float = 5.0e-11):
     res = judge(time1, time2, simulation(data), squids)
     if default_result.drop('time', axis=1).equals(res.drop('time', axis=1)):
         for index in default_result.index:

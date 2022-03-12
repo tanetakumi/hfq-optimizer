@@ -44,5 +44,5 @@ def betac(calc_type: str, area: float = None, Rshunt: float= None, Rsubgap: floa
         raise ValueError('calc_type(計算タイプ)の値が読み取れません。')
 
 if __name__ == "__main__":
-    print(betac(calc_type='shunt', area=0.5))
+    print(shunt_calc(0.45))
 
