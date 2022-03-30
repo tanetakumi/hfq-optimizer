@@ -161,15 +161,15 @@ class Data:
         return squids
 
     def __default_simulation(self,  plot = True) -> pd.DataFrame:
-        df = self.__simulation(self.vdf['def'])
+        df = self.data_simulation(self.vdf['def'])
         if plot: 
             # print("default 値でのシュミレーション結果")
-            df.plot()
+            df.plot(legend=False)
             #df.plot(legend=False,figsize=(9, 6), fontsize=14, grid=True, linewidth=3)
         return judge(self.time_start, self.time_stop, df, self.squids, plot)
 
 
-    def __simulation(self, parameter : pd.Series) -> pd.DataFrame:
+    def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
         copied_sim_data = self.sim_data
         for index in parameter.index:
             copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameter[index]))
@@ -179,7 +179,7 @@ class Data:
 
 
     def __operation_judge(self, parameter : pd.Series):
-        res = judge(self.time_start, self.time_stop, self.__simulation(parameter), self.squids)
+        res = judge(self.time_start, self.time_stop, self.data_simulation(parameter), self.squids)
         if self.default_result.drop('time', axis=1).equals(res.drop('time', axis=1)):
             for index in self.default_result.index:
                 if self.default_result.at[index, 'element'] == res.at[index, 'element'] and self.default_result.at[index, 'phase'] == res.at[index, 'phase']:

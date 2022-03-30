@@ -1,3 +1,4 @@
+from matplotlib.pyplot import legend
 import pandas as pd
 import math
 from .pyjosim import simulation
@@ -17,7 +18,7 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list
         elif len(squid) == 3:
             newDataframe[''.join(squid)] = data[squid[0]] + data[squid[1]] + data[squid[2]]
     if plot:
-        newDataframe.plot()
+        newDataframe.plot(legend=False)
     resultframe = pd.DataFrame(columns=['time', 'element', 'phase'])
     for column_name, srs in newDataframe.iteritems():
 
