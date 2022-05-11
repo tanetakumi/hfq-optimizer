@@ -3,7 +3,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import axes3d    # <- 明示的には使わないが、インポートしておく必要がある。
 from matplotlib.animation import FuncAnimation
 import matplotlib
- # matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 
@@ -40,24 +40,31 @@ def dplot():
 
     licp_ax=100
     ex_ax=600
-
+    x_size = 100
+    y_size = 600
     # (x,y)データを作成
-    x = np.linspace(0, 1, licp_ax)
-    y = np.linspace(-3, 3, ex_ax)
+    x = np.linspace(0, 1, x_size)
+    y = np.linspace(-3, 3, y_size)
 
     # 格子点を作成
     X, Y = np.meshgrid(x, y)
 
     # X, Y は逆向き
-    Z = np.empty([ex_ax, licp_ax], dtype=float)
+    Z = np.empty((y_size, x_size), dtype=float)
 
 
-    for _x in range(licp_ax):
-        licp = _x/licp_ax
-        print(_x)
-        for _y in range(100):
-            for i in range(6):
-                Z[_y + i*100][_x] = igic_max(licp,_y/100)
+    for yn in range(y_size):
+        for xn in range(x_size):
+            Z[yn][xn] = igic_max(x[xn],y[yn])
+
+    """
+        for _x in range(licp_ax):
+            licp = _x/licp_ax
+            print(_x)
+            for _y in range(100):
+                for i in range(6):
+                    Z[_y + i*100][_x] = igic_max(licp,_y/100)
+    """
 
     # 曲面を描画
     ax.plot_surface(X, Y, Z, cmap = "plasma_r")

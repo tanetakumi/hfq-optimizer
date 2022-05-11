@@ -19,6 +19,7 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list
             newDataframe[''.join(squid)] = data[squid[0]] + data[squid[1]] + data[squid[2]]
     if plot:
         newDataframe.plot(legend=False)
+
     resultframe = pd.DataFrame(columns=['time', 'element', 'phase'])
     for column_name, srs in newDataframe.iteritems():
 
@@ -41,6 +42,7 @@ def judge(time1 : float, time2 : float, data : pd.DataFrame, judge_squids : list
                 resultframe = resultframe.append({'time':srs.index[i], 'element':column_name, 'phase':flag},ignore_index=True)
 
     resultframe.sort_values(['element', 'phase'], inplace=True)
+    print(resultframe)
     return resultframe
 
 
@@ -56,7 +58,6 @@ def compareDataframe(df1 : pd.DataFrame, df2 : pd.DataFrame, delay_time : float 
         else:
             return False
     return True
-
 
 
 def operation_judge(time1 : float, time2 : float, data : str, squids : list, df_result : pd.DataFrame):

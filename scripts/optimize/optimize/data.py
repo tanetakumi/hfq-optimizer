@@ -1,4 +1,3 @@
-
 import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint
@@ -52,9 +51,9 @@ class Data:
             li = re.sub('\s','',raw_line)
             char = re.search('#.+?\(',li, flags=re.IGNORECASE).group()
             char = re.sub('#|\(','',char)
-            if not df.empty and char in df['char'].tolist():
+            if not df.empty and char in df.index.tolist():
                 continue
-            dic = {'char': char,'def': None, 'main': None, 'sub': None, 'element':None,'fix': False,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
+            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
             
             
             m = re.search('\(.+?\)',li).group()
@@ -120,19 +119,20 @@ class Data:
                             dic['dpv'] = 7
                     break
             
-
-            df = df.append(dic,ignore_index=True, verify_integrity=True)
+            dic_df = pd.DataFrame.from_dict({ char : dic }, orient = "index")
+            df = pd.concat([df, dic_df])
+            
+            # df = df.append(dic, ignore_index=True, verify_integrity=True)
         # dataframe の検査が必要かもしれない
-        df.set_index('char', inplace=True)
-
+        # df.set_index('char', inplace=True)
 
         raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
 
         for v in re.findall('#.+\(.+?\)',raw):
-            char = re.search('#.+?\(',v).group()
-            char = re.sub('#|\(','',char)
-            char = "#("+char+")"
-            raw = raw.replace(v, char)
+            ch = re.search('#.+?\(',v).group()
+            ch = re.sub('#|\(','',ch)
+            ch = "#("+ch+")"
+            raw = raw.replace(v, ch)
             
         return df , raw
 
