@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
-from .judge import judge
+from .judge2 import judge
 from .calculator import shunt_calc
 import numpy as np
 import concurrent
@@ -41,6 +41,10 @@ class Data:
             print("--- SQUID used for judging the operation ---")
             print(self.squids)
             print('\n')
+            print("--- timming of JJ switches ---")
+            for l in self.default_result:
+                    print(l)
+
 
     def __get_variable(self, raw : str) -> tuple:
         df = pd.DataFrame()
