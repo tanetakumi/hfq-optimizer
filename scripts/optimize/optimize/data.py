@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
-from .judge2 import judge
+from .judge2 import compare_switch_timmings, judge
 from .calculator import shunt_calc
 import numpy as np
 import concurrent
@@ -184,18 +184,7 @@ class Data:
 
     def __operation_judge(self, parameter : pd.Series):
         res = judge(self.time_start, self.time_stop, self.data_simulation(parameter), self.squids)
-        if self.default_result.drop('time', axis=1).equals(res.drop('time', axis=1)):
-            for index in self.default_result.index:
-                if self.default_result.at[index, 'element'] == res.at[index, 'element'] and self.default_result.at[index, 'phase'] == res.at[index, 'phase']:
-                    time_df1 = self.default_result.at[index, 'time']
-                    time_df2 = res.at[index, 'time']
-                    if time_df2 < time_df1 - self.time_delay or time_df1 + self.time_delay < time_df2:
-                        return False
-                else:
-                    return False
-            return True    
-        else:
-            return False
+        return compare_switch_timmings(res, self.default_result,self.time_delay)
 
 
     def get_margins(self, plot : bool = False, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
