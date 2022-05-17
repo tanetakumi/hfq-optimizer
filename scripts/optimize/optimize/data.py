@@ -28,6 +28,7 @@ class Data:
         self.time_start= float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
         self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
         self.time_delay = float(self.__get_value(raw_data, "PulseDelay"))
+        self.pulse_interval = float(self.__get_value(raw_data, "PulseInterval"))
         self.squids = self.__get_judge_spuid(raw_data)
         self.default_result = self.__default_simulation(plot=plot)
 
@@ -40,6 +41,9 @@ class Data:
             print('\n')
             print("--- SQUID used for judging the operation ---")
             print(self.squids)
+            print('\n')
+            print("--- Clock Pulse Interval ---")
+            print(self.pulse_interval)
             print('\n')
             print("--- timming of JJ switches ---")
             for l in self.default_result:
@@ -148,7 +152,7 @@ class Data:
         if m_object:
             return re.split('=', m_object.group())[1]
         else:
-            return None
+            raise ValueError("[ "+key+" ]の値が読み取れません。")
 
     def __get_judge_spuid(self, raw : str) -> list:
         squids = []
