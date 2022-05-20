@@ -158,14 +158,22 @@ class Data:
         squids = []
         tmp = []
         for line in raw.splitlines():
-            m_obj = re.search('\.print\s+phase.+',line, flags=re.IGNORECASE)
-            if m_obj:
-                data_sub = re.sub('\s|\.print|phase','',m_obj.group(), flags=re.IGNORECASE)
+            p_obj = re.search('\.print\s+phase.+',line, flags=re.IGNORECASE)
+            v_obj = re.search('\.print\s+devv.+',line, flags=re.IGNORECASE)
+            # 連続であることから　m_obj = None　になるまで　tmp に追加する。
+            if p_obj:
+                data_sub = re.sub('\s|\.print|phase','',p_obj.group(), flags=re.IGNORECASE)
                 tmp.append('P('+data_sub+')')
             else:
                 if len(tmp)>0:
                     squids.append(tmp)
                     tmp = []
+            # 電圧の時
+            if v_obj:
+                data_sub = re.sub('\s|\.print|devv','',v_obj.group(), flags=re.IGNORECASE)
+                squids.append(['V('+data_sub+')'])
+            
+
         return squids
 
     def __default_simulation(self,  plot = True) -> pd.DataFrame:
@@ -174,7 +182,7 @@ class Data:
             # print("default 値でのシュミレーション結果")
             df.plot(legend=False)
             #df.plot(legend=False,figsize=(9, 6), fontsize=14, grid=True, linewidth=3)
-        return judge(self.time_start, self.time_stop, df, self.squids, plot)
+        return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
@@ -187,7 +195,7 @@ class Data:
 
 
     def __operation_judge(self, parameter : pd.Series):
-        res = judge(self.time_start, self.time_stop, self.data_simulation(parameter), self.squids)
+        res = judge(self.time_start, self.time_stop, self.pulse_interval, self.data_simulation(parameter), self.squids)
         return compare_switch_timmings(res, self.default_result,self.time_delay)
 
 
