@@ -47,7 +47,7 @@ class Data:
             print('\n')
             print("--- timming of JJ switches ---")
             for l in self.default_result:
-                    print(l)
+                print(l)
 
 
     def __get_variable(self, raw : str) -> tuple:
@@ -61,7 +61,7 @@ class Data:
             char = re.sub('#|\(','',char)
             if not df.empty and char in df.index.tolist():
                 continue
-            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
+            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
             
             
             m = re.search('\(.+?\)',li).group()
@@ -98,6 +98,12 @@ class Data:
                     elif re.fullmatch('dpv',val[0],flags=re.IGNORECASE):
                         num = stringToNum(val[1])
                         dic['dpv'] = num
+                    elif re.fullmatch('upper',val[0],flags=re.IGNORECASE):
+                        num = stringToNum(val[1])
+                        dic['upper'] = num
+                    elif re.fullmatch('lower',val[0],flags=re.IGNORECASE):
+                        num = stringToNum(val[1])
+                        dic['lower'] = num
                     else:
                         raise ValueError("[ "+sp+" ]の記述が読み取れません。")
                 else:
@@ -173,15 +179,15 @@ class Data:
                 data_sub = re.sub('\s|\.print|devv','',v_obj.group(), flags=re.IGNORECASE)
                 squids.append(['V('+data_sub+')'])
             
-
         return squids
+
 
     def __default_simulation(self,  plot = True) -> pd.DataFrame:
         df = self.data_simulation(self.vdf['def'])
         if plot: 
             # print("default 値でのシュミレーション結果")
             df.plot(legend=False)
-            #df.plot(legend=False,figsize=(9, 6), fontsize=14, grid=True, linewidth=3)
+            plt.xlabel("Time(s)", size=18)#x軸指定
         return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
 
 
@@ -225,6 +231,7 @@ class Data:
 
     def __get_margin(self, srs : pd.Series, target_ele : str, accuracy : int = 7):
 
+        # deepcopy　をする
         parameter : pd.Series = copy.deepcopy(srs)
 
         # デフォルト値の抽出
@@ -234,7 +241,7 @@ class Data:
         if not self.__operation_judge(parameter):
             return {"index" : target_ele, "result" : (0, 0, 0, 0)}
 
-        # lower    
+        # lower ----------------- 
         high_v = default_v
         low_v = 0
         target_v = (high_v + low_v)/2
@@ -250,8 +257,9 @@ class Data:
 
         lower_margin = high_v
         lower_margin_rate = (lower_margin - default_v) * 100 / default_v
+        # -----------------
 
-        # upper
+        # upper -----------------
         high_v = 0
         low_v = default_v
         target_v = default_v * 2
@@ -271,7 +279,9 @@ class Data:
 
         upper_margin = low_v
         upper_margin_rate = (upper_margin - default_v) * 100 / default_v
+        # -----------------
 
+        # deepcopy　したものを削除
         del parameter
 
         return {"index" : target_ele, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
@@ -382,7 +392,6 @@ class Data:
 
         # --- biasのカラーを変更したリスト ---
         index_color = []
-        import re
         for i in index:
             if re.search('bias|Vb',i,flags=re.IGNORECASE):
                 index_color.append('red')
@@ -393,19 +402,22 @@ class Data:
         # 図のサイズ　sharey:グラフの軸の共有(y軸)
         fig, axes = plt.subplots(figsize=(10, len(index)/2.5), ncols=2, sharey=True)
         plt.subplots_adjust(wspace=0)
-        # fig.suptitle("Operation Margin", fontsize=15)
+        plt.suptitle('Margins')
+        axes[0].set_ylabel("Elements", fontsize=20)
+        axes[1].set_xlabel("%", fontsize=20)
 
         # 分割した 0 グラフ
         axes[0].barh(index, column0, align='center', color=index_color)
         axes[0].set_xlim(-100, 0)
-        # axes[0].tick_params(labelsize=15)
-        axes[0].grid(False)
+        axes[0].grid(axis='y')
+
+
         # 分割した 1 グラフ
         axes[1].barh(index, column1, align='center', color=index_color)
         axes[1].set_xlim(0, 100)
-        # axes[1].tick_params(labelsize=15)
         axes[1].tick_params(axis='y', colors=plot_color)  # 1 グラフのメモリ軸の色をプロットの色と合わせて見れなくする
-        axes[1].grid(False)
+        axes[1].grid(axis='y')
+
 
         if filename != None:
             fig.savefig(filename)
