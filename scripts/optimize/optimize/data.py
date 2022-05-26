@@ -3,7 +3,7 @@ import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
 from .judge2 import compare_switch_timmings, judge
-from .calculator import shunt_calc
+from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent
 import copy
@@ -378,7 +378,9 @@ class Data:
             if self.vdf.at[index,'dp']:
                 tmp = self.vdf.at[index,'sub']
                 dpv = self.vdf.at[index,'dpv']
-                self.vdf.at[index,'sub'] = np.random.normal(tmp,tmp*dpv/200)
+                up = self.vdf.at[index,'upper']
+                lo = self.vdf.at[index,'lower']
+                self.vdf.at[index,'sub'] = rand_norm(tmp, tmp*dpv/200, up, lo)
 
 
     def __plot(self, margins : pd.DataFrame, filename = None):
