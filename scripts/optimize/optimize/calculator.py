@@ -58,4 +58,7 @@ def rand_norm(mean, std, upper = None, lower = None):
     else:
         a = (lower - mean) / std 
 
-    return truncnorm(a, b, loc=100, scale=10).rvs()
+    return truncnorm(a, b, loc=mean, scale=std).rvs()
+
+def vaild_number(x, num):
+    return round(x, num - math.floor(math.log10(abs(x)))- 1)

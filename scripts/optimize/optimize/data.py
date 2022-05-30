@@ -3,7 +3,7 @@ import pandas as pd
 from .util import stringToNum, isfloat, isint
 from .pyjosim import simulation
 from .judge2 import compare_switch_timmings, judge
-from .calculator import shunt_calc, rand_norm
+from .calculator import shunt_calc, rand_norm, vaild_number
 import numpy as np
 import concurrent
 import copy
@@ -187,7 +187,7 @@ class Data:
         if plot: 
             # print("default 値でのシュミレーション結果")
             df.plot(legend=False)
-            plt.xlabel("Time(s)", size=18)#x軸指定
+            plt.xlabel("Time(s)", size=18)# x軸指定
         return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
 
 
@@ -360,6 +360,12 @@ class Data:
                 # 保存する
                 self.__plot(margins_for_plot, directory+"/"+str(k)+"-x.png")
                 self.vdf.to_csv(directory+"/"+str(k)+"-value.csv")
+                
+                with open(directory+"/"+str(k)+"-netlist.txt","w") as f:
+                    copied_sim_data = self.sim_data
+                    for index in main_parameter.index:
+                        copied_sim_data = copied_sim_data.replace('#('+index+')', '#'+index+'('+ str(vaild_number(main_parameter[index],3))+')')
+                    f.write(copied_sim_data)
 
             else:
                 print("最適化終了")
