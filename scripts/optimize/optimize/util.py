@@ -1,4 +1,5 @@
 import re
+import math
 
 def isint(s):  # 正規表現を使って判定を行う
     p = '[-+]?\d+'
@@ -38,3 +39,10 @@ def vround(number : float, digit : int = 3) -> float:
                 return round(number, digit - m_obj.start())
     else:
         return int(number)
+
+
+def vaild_number(x, num):
+    if x == 0:
+        return 0
+    else:
+        return round(x, num - math.floor(math.log10(abs(x)))- 1)

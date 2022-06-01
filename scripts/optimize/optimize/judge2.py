@@ -1,6 +1,7 @@
 import pandas as pd
 import math
 import re
+import matplotlib.pyplot as plt
 
 def judge(time1 : float, time2 : float, pulse_interval : float, data : pd.DataFrame, judge_squids : list, plot = False) -> pd.DataFrame:
 
@@ -16,6 +17,7 @@ def judge(time1 : float, time2 : float, pulse_interval : float, data : pd.DataFr
         elif len(squid) == 3:
             newDataframe[''.join(squid)] = data[squid[0]] + data[squid[1]] + data[squid[2]]
     if plot:
+        plt.xlabel("Time(s)", size=18)# x軸指定
         newDataframe.plot(legend=False)
 
     resultframe = []

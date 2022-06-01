@@ -1,9 +1,9 @@
 import re
 import pandas as pd
-from .util import stringToNum, isfloat, isint
+from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
 from .judge2 import compare_switch_timmings, judge
-from .calculator import shunt_calc, rand_norm, vaild_number
+from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent
 import copy
@@ -322,8 +322,9 @@ class Data:
                         if not self.vdf.at[element,'fix']:
                             # 最小マージンの素子を探す。
                             if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
-                                min_margin = min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)']))
+                                min_margin = vaild_number(min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)'])), 4)
                                 min_index = element
+                    
                     
                     print("最小マージン : ", min_index, "  ", min_margin)
 
