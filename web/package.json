@@ -8,11 +8,10 @@
     },
     "scripts": {
         "clean": "rm -rf ./node_modules package-lock.json && npm i",
+        "upgrade": "npm install typescript@latest react@latest react-dom@latest @types/react@latest @types/react-dom@latest webpack@latest webpack-dev-server@latest webpack-cli@latest ts-loader@latest clean-webpack-plugin@latest html-webpack-plugin@latest --save-exact",
         "build": "webpack",
-        "watch": "webpack -w",
-        "start": "webpack-dev-server -d --content-base ./public"
+        "start": "webpack-dev-server"
     },
-    "private": true,
     "dependencies": {
         "@types/react": "^18.0.12",
         "@types/react-dom": "^18.0.5",

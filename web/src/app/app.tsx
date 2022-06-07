@@ -7,11 +7,12 @@ const App: React.FC<{ compiler: string, framework: string , test: string}> = (pr
       <div>{props.compiler}</div>
       <div>{props.framework}</div>
       <div>{props.test}</div>
+      <div>こんにちわ</div>
     </div>
   );
 }
 
 ReactDOM.render(
   <App compiler="TypeScript" framework="React" test="Youtube"/>,
-  document.getElementById("root")
+  document.getElementById("test")
 );
