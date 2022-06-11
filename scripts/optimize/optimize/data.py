@@ -349,7 +349,13 @@ class Data:
                     pre_min_index = min_index
 
                     # 最大マージンと最小マージンの中間点を次の最適化対象にする。
-                    self.vdf.at[min_index,'sub'] = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
+                    shifted_value = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
+                    if shifted_value < self.vdf.at[min_index,'lower']:
+                        self.vdf.at[min_index,'sub'] = self.vdf.at[min_index,'lower']
+                    elif shifted_value > self.vdf.at[min_index,'upper']:
+                        self.vdf.at[min_index,'sub'] = self.vdf.at[min_index,'upper']
+                    else:
+                        self.vdf.at[min_index,'sub'] = shifted_value
 
                 # --------------- ばらつきのループ
 
