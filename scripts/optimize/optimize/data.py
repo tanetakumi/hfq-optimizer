@@ -288,22 +288,41 @@ class Data:
 
 
     
-    def optimize(self, directory : str):
-        # 今のところは10回の回数制限とbreakで処理
-        # 後々、制限を変更したい
+    def optimize(self, directory : str, l1c=10, l2c=40):
+
+        # ------------------------------ #
+        # 変数
+        #
+        #
+        # ------------------------------ #
+        diff_margin_parcentage = 0.2
+        loop1_count = l1c
+        loop2_count = l2c
+
+
+
+        # directory の処理
         if os.path.exists(directory):
             shutil.rmtree(directory)
         os.mkdir(directory)
 
-        first_min_margin = 0
-        for k in range(10):
+        
+        first_min_margin = 0 # loop 1 のマージン
 
-            second_min_margin = 0
-            margins_for_plot = None
-            main_parameter = None
-            #　ばらつきシュミレーション
-            for j in range(50):
-                
+        
+        for k in range(loop1_count):
+
+            # -------- loop 1 --------
+
+            second_min_margin = 0     # loop 2 のマージン
+            margins_for_plot = None   # 保存するためのマージン保管場所
+            main_parameter = None     # 最適解のパラメータ
+
+            
+            for j in range(loop2_count):
+
+                # -------- loop 2 --------
+
                 self.vdf['sub'] = self.vdf['main'] 
                 self.shunt_apply()
                 # 最初の一回はそのままのマージンを計算
@@ -317,6 +336,7 @@ class Data:
                     margins = self.get_margins()
 
                     min_margin = 100
+                    
                     min_index = None
                     for element in margins.index:
                         if not self.vdf.at[element,'fix']:
@@ -325,32 +345,44 @@ class Data:
                                 min_margin = vaild_number(min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)'])), 4)
                                 min_index = element
                     
-                    
+                    if 'BIAS' in margins.index:
+                        bias_margin =  vaild_number(min(abs(margins.at['BIAS','low(%)']), abs(margins.at['BIAS','high(%)'])), 4)
+                        print("バイアスマージン : ",bias_margin)
+
                     print("最小マージン : ", min_index, "  ", min_margin)
 
+                    #　logへのマージンの書き込み
+                    with open(directory+"/log.txt", 'a') as f:
+                        f.write(str(k)+":"+str(j)+":"+str(i)+"の最小マージン : "+ str(min_index)+ "  "+ str(min_margin)+'\n') 
 
+                    
                     if min_margin > second_min_margin:
                         print("最適値の更新"+str(k)+":"+str(j)+":"+str(i)+"の最適化  ", min_margin, "%")
                         margins_for_plot = margins
                         second_min_margin = min_margin
                         main_parameter = copy.copy(self.vdf['sub'])
 
-                    with open(directory+"/log.txt", 'a') as f:
-                        f.write(str(k)+":"+str(j)+":"+str(i)+"の最小マージン : "+ str(min_index)+ "  "+ str(min_margin)+'\n') 
+                    else:
+                        if min_margin + diff_margin_parcentage > second_min_margin:
+                            self.vdf['sub'].to_csv(directory+"/"+str(k)+"-"+str(j)+"-"+str(i)+"-sub.csv")
 
-                    # 同じものが最適化対象になってしまったら終了
-                    if pre_min_index == min_index:
+    
+                    # -------------------------- #
+                    # ループ2 終了条件
+                    # 1. 最小マージンが0
+                    # 2. 同じものが最適化対象になる
+                    # -------------------------- #                  
+                    if min_margin == 0:     # 最小マージンが0
                         break
 
-                    # 最小マージンが0であれば終了
-                    if min_margin == 0:
+                    if pre_min_index == min_index:      # 同じものが最適化対象
                         break
-
                     pre_min_index = min_index
 
-                    # 最大マージンと最小マージンの中間点を次の最適化対象にする。
-                    shifted_value = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
 
+
+                    # 最大マージンと最小マージンの中間点を次の最適化対象にする。最小値最大値を考慮
+                    shifted_value = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
                     lower_limit = self.vdf.at[min_index,'lower']
                     upper_limit = self.vdf.at[min_index,'upper']
 
@@ -361,17 +393,23 @@ class Data:
                     else:
                         self.vdf.at[min_index,'sub'] = shifted_value
 
-                # --------------- ばらつきのループ
+                # -------- loop 2 end --------
 
+
+            # -------------------------- #
+            # ループ1 終了条件
+            # 1. 最小マージンが改善されない
+            # -------------------------- #
             if second_min_margin > first_min_margin:
                 print("--- "+str(k)+":x:x"+"の最適化  ", second_min_margin, "% ---")
                 first_min_margin = second_min_margin
                 self.vdf['main'] = main_parameter
-                print("保存")
-                # 保存する
-                self.__plot(margins_for_plot, directory+"/"+str(k)+"-x.png")
-                self.vdf.to_csv(directory+"/"+str(k)+"-value.csv")
                 
+
+                # 保存する
+                print("保存")
+                self.__plot(margins_for_plot, directory+"/"+str(k)+"-x.png")
+                main_parameter.to_csv(directory+"/"+str(k)+"-main.csv")
                 with open(directory+"/"+str(k)+"-netlist.txt","w") as f:
                     copied_sim_data = self.sim_data
                     for index in main_parameter.index:
