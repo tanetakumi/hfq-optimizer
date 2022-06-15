@@ -302,7 +302,7 @@ class Data:
             margins_for_plot = None
             main_parameter = None
             #　ばらつきシュミレーション
-            for j in range(15):
+            for j in range(50):
                 
                 self.vdf['sub'] = self.vdf['main'] 
                 self.shunt_apply()
@@ -350,10 +350,14 @@ class Data:
 
                     # 最大マージンと最小マージンの中間点を次の最適化対象にする。
                     shifted_value = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
-                    if shifted_value < self.vdf.at[min_index,'lower']:
-                        self.vdf.at[min_index,'sub'] = self.vdf.at[min_index,'lower']
-                    elif shifted_value > self.vdf.at[min_index,'upper']:
-                        self.vdf.at[min_index,'sub'] = self.vdf.at[min_index,'upper']
+
+                    lower_limit = self.vdf.at[min_index,'lower']
+                    upper_limit = self.vdf.at[min_index,'upper']
+
+                    if lower_limit != None and shifted_value < lower_limit:
+                        self.vdf.at[min_index,'sub'] = lower_limit
+                    elif upper_limit != None and shifted_value < upper_limit:
+                        self.vdf.at[min_index,'sub'] = upper_limit
                     else:
                         self.vdf.at[min_index,'sub'] = shifted_value
 
