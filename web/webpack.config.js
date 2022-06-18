@@ -10,24 +10,18 @@ module.exports = {
     port : 3003,
     hot: true,
     static: {
-      directory: path.resolve(__dirname, 'public'),
+      directory: path.join(__dirname, 'public'),
     }
   },  
   // メインとなるJavaScriptファイル（エントリーポイント）
-  entry: './src/app/app.tsx',
-  plugins: [
-    new CleanWebpackPlugin({
-      cleanAfterEveryBuildPatterns: ['public/build']
-    }),
-    new HtmlWebpackPlugin({
-      template: 'src/templates/index.html'
-    }),
-  ],
+  entry: path.join(__dirname, 'src', 'index.tsx'),
   // ファイルの出力設定
   output: {
-    path: __dirname + '/public',
-    filename: 'build/[name].[contenthash].js'
+    path: path.join(__dirname, 'public'),
+    filename: 'build.js'
   },
+  plugins: [
+  ],
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },
