@@ -131,6 +131,10 @@ class Data:
                         dic['element'] = 'B'
                         if dic['dpv'] == None:
                             dic['dpv'] = 7
+                    else:
+                        dic['element'] = None
+                        if dic['dpv'] == None:
+                            dic['dpv'] = 7
                     break
             
             dic_df = pd.DataFrame.from_dict({ char : dic }, orient = "index")

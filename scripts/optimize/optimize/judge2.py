@@ -45,7 +45,7 @@ def judge(time1 : float, time2 : float, pulse_interval : float, data : pd.DataFr
         elif re.search('V\(.+\)',column_name, flags=re.IGNORECASE):
             srs_std = srs.rolling(window=10).std()
             srs_std_max = srs_std.rolling(window=10).max()
-            basis = srs_std_max.mean()
+            basis = srs_std_max.mean()/3
             reap = False
             tmp = 0
             flag = 1
