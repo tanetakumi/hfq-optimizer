@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge2 import compare_switch_timmings, judge
+from .judge3 import compare_switch_timmings, judge
 from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent
@@ -23,14 +23,15 @@ plt.rcParams.update(config)
 
 
 class Data:
-    def __init__(self, raw_data : str, show : bool = False, plot : bool = True):
+    def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
-        self.time_start= float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
-        self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
-        self.time_delay = float(self.__get_value(raw_data, "PulseDelay"))
-        self.pulse_interval = float(self.__get_value(raw_data, "PulseInterval"))
-        self.squids = self.__get_judge_spuid(raw_data)
         self.default_result = self.__default_simulation(plot=plot)
+        self.time_start = config["start.time"]
+        self.time_stop = config["end.time"]
+        self.time_stop = config["end.time"]
+        self.pulse_interval = config["pulse.interval"]
+        self.squids = config["phase.ele"]
+        self.allow_multi_switches = config["allow.multi.swithes"]
 
         if show:
             print("--- List of variables to optimize ---")
@@ -149,37 +150,6 @@ class Data:
             raw = raw.replace(v, ch)
             
         return df , raw
-
-
-
-
-    def __get_value(self, raw, key) -> str:
-        m_object = re.search(key+'=[\d\.\+e-]+', raw, flags=re.IGNORECASE)
-        if m_object:
-            return re.split('=', m_object.group())[1]
-        else:
-            raise ValueError("[ "+key+" ]の値が読み取れません。")
-
-    def __get_judge_spuid(self, raw : str) -> list:
-        squids = []
-        tmp = []
-        for line in raw.splitlines():
-            p_obj = re.search('\.print\s+phase.+',line, flags=re.IGNORECASE)
-            v_obj = re.search('\.print\s+devv.+',line, flags=re.IGNORECASE)
-            # 連続であることから　m_obj = None　になるまで　tmp に追加する。
-            if p_obj:
-                data_sub = re.sub('\s|\.print|phase','',p_obj.group(), flags=re.IGNORECASE)
-                tmp.append('P('+data_sub.upper()+')')
-            else:
-                if len(tmp)>0:
-                    squids.append(tmp)
-                    tmp = []
-            # 電圧の時
-            if v_obj:
-                data_sub = re.sub('\s|\.print|devv','',v_obj.group(), flags=re.IGNORECASE)
-                squids.append(['V('+data_sub.upper()+')'])
-            
-        return squids
 
 
     def __default_simulation(self,  plot = True) -> pd.DataFrame:

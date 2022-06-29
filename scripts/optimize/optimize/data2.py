@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge2 import compare_switch_timmings, judge
+from .judge3 import compare_switch_timmings, judge
 from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent

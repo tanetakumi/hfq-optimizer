@@ -63,8 +63,8 @@ def judge(time1 : float, time2 : float, pulse_interval : float, data : pd.DataFr
                             resultframe.append({'time':srs_std_max.index[i], 'phase':-flag, 'element':column_name})
                             flag = flag + 1
                         reap = False
-
-    return resultframe
+    c5 = lll(resultframe)
+    return c5
 
 
 def compare_switch_timmings(dl1 : list, dl2 : list, delay_time : float = 1.0e-10) -> bool:
@@ -87,3 +87,21 @@ def compare_switch_timmings(dl1 : list, dl2 : list, delay_time : float = 1.0e-10
         return False
     
  
+
+def lll(flam):
+    new = []
+    tmp = 0
+    for t in flam:
+        if tmp == 0:
+            tmp = t['time']
+            p_tmp = t['phase']
+            new.append(t)
+        else:
+            if tmp + 0.2e-09 > t['time']:
+                continue
+            else:
+                tmp = t['time']
+                p_tmp = p_tmp +1
+                t['phase'] = p_tmp
+                new.append(t)
+    return new
