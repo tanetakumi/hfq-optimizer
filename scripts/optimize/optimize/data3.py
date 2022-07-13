@@ -26,25 +26,11 @@ class Data:
     def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
         self.default_result = self.__default_simulation(plot=plot)
-        self.time_start = config["start.time"]
-        self.time_stop = config["end.time"]
-        self.time_stop = config["end.time"]
-        self.pulse_interval = config["pulse.interval"]
-        self.squids = config["phase.ele"]
-        self.allow_multi_switches = config["allow.multi.swithes"]
+    
 
         if show:
             print("--- List of variables to optimize ---")
             print(self.vdf)
-            print('\n')
-            print("--- Period to calculate the initial value of bias ---")
-            print(self.time_start, " ~ ", self.time_stop)
-            print('\n')
-            print("--- SQUID used for judging the operation ---")
-            print(self.squids)
-            print('\n')
-            print("--- Clock Pulse Interval ---")
-            print(self.pulse_interval)
             print('\n')
             print("--- timming of JJ switches ---")
             for l in self.default_result:
@@ -62,7 +48,7 @@ class Data:
             char = re.sub('#|\(','',char)
             if not df.empty and char in df.index.tolist():
                 continue
-            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
+            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None}
             
             
             m = re.search('\(.+?\)',li).group()
@@ -141,8 +127,6 @@ class Data:
             dic_df = pd.DataFrame.from_dict({ char : dic }, orient = "index")
             df = pd.concat([df, dic_df])
 
-        raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
-
         for v in re.findall('#.+\(.+?\)',raw):
             ch = re.search('#.+?\(',v).group()
             ch = re.sub('#|\(','',ch)
@@ -154,8 +138,7 @@ class Data:
 
     def __default_simulation(self,  plot = True) -> pd.DataFrame:
         df = self.data_simulation(self.vdf['def'])
-        if plot: 
-            # print("default 値でのシュミレーション結果")
+        if plot:
             df.plot(legend=False)
             plt.xlabel("Time(s)", size=18)# x軸指定
         return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
