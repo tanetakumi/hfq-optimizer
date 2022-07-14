@@ -35,15 +35,16 @@ class Data:
         # check config file
         if check_config(config):
             self.config = config
+            
+        # print(self.sim_data)
+        self.sim_data = self.__create_netlist(self.sim_data,self.config)
+        # print(self.sim_data)
 
         # 変数が存在するかしないか
-        
         if self.vdf.empty:
-            self.exist_variable = False
-            self.default_result = self.get_switch_timmings(self.sim_data)
+            self.default_result = self.__switch_timmings(self.sim_data,plot=plot)
         else:
-            self.exist_variable = True
-            self.default_result = self.get_switch_timmings(self.__input_parameter(self.vdf["def"]))
+            self.default_result = self.__switch_timmings(self.__input_parameter(self.vdf["def"]),plot=plot)
 
         
         if show:
@@ -172,10 +173,12 @@ class Data:
             copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameter[index]))
         return copied_sim_data
     
-    def get_switch_timmings(self, data : str, plot = False) -> pd.DataFrame:
+    def get_switch_timmings(self):
+        return self.default_result
+    
+    def __switch_timmings(self, data : str, plot = False) -> pd.DataFrame:
         df = simulation(data)
 
-        print(df)
         time1 = self.config["avgcalc.start.time"]
         time2 = self.config["avgcalc.end.time"]
         pulse_interval = self.config["pulse.interval"]
@@ -198,6 +201,11 @@ class Data:
         if not voltage_ele == []:
             for ele in voltage_ele:
                 newDataframe["V("+ele+")"] = df["V("+ele+")"]
+
+        if plot:
+            self.__plot(df)
+            self.__plot(newDataframe)
+
 
         resultframe = []
         for column_name, srs in newDataframe.iteritems():
@@ -244,9 +252,33 @@ class Data:
                             reap = False
         return resultframe
 
-    def __plot(dataframe : pd.DataFrame):
-        dataframe.plot(legend=False)
+    def __plot(self,dataframe : pd.DataFrame):
+        dataframe.plot()
         plt.xlabel("Time(s)", size=18)# x軸指定
+
+    def __create_netlist(self,netlist,config_data) -> str:
+        # raw のリセット
+        raw = ""
+        # .print .endの行を取得
+        for line in netlist.splitlines():
+            
+            print_obj = re.search('\.print',line, flags=re.IGNORECASE)
+            end_obj = re.search('\.end$',line, flags=re.IGNORECASE)
+            if not print_obj and not end_obj:
+                raw = raw + line + "\n"
+
+        if not config_data["phase.ele"]==[]:
+            for ll in config_data["phase.ele"]:
+                for l in ll:
+                    raw = raw + ".print phase " + l + "\n"
+
+        if not config_data["voltage.ele"]==[]:
+            for ll in config_data["voltage.ele"]:
+                for l in ll:
+                    raw = raw + ".print devv " + l + "\n"
+
+        raw = raw + ".end"
+        return raw
 
 
 
