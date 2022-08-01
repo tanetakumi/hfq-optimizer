@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge2 import compare_switch_timmings, judge
+from .judge3 import compare_switch_timmings, judge
 from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent
@@ -23,27 +23,14 @@ plt.rcParams.update(config)
 
 
 class Data:
-    def __init__(self, raw_data : str, show : bool = False, plot : bool = True):
+    def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
-        self.time_start= float(self.__get_value(raw_data, "EndTimeOfBiasRise"))
-        self.time_stop = float(self.__get_value(raw_data, "StartTimeOfPulseInput"))
-        self.time_delay = float(self.__get_value(raw_data, "PulseDelay"))
-        self.pulse_interval = float(self.__get_value(raw_data, "PulseInterval"))
-        self.squids = self.__get_judge_spuid(raw_data)
         self.default_result = self.__default_simulation(plot=plot)
+    
 
         if show:
             print("--- List of variables to optimize ---")
             print(self.vdf)
-            print('\n')
-            print("--- Period to calculate the initial value of bias ---")
-            print(self.time_start, " ~ ", self.time_stop)
-            print('\n')
-            print("--- SQUID used for judging the operation ---")
-            print(self.squids)
-            print('\n')
-            print("--- Clock Pulse Interval ---")
-            print(self.pulse_interval)
             print('\n')
             print("--- timming of JJ switches ---")
             for l in self.default_result:
@@ -61,7 +48,7 @@ class Data:
             char = re.sub('#|\(','',char)
             if not df.empty and char in df.index.tolist():
                 continue
-            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None,'tmp': 0}
+            dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None}
             
             
             m = re.search('\(.+?\)',li).group()
@@ -140,8 +127,6 @@ class Data:
             dic_df = pd.DataFrame.from_dict({ char : dic }, orient = "index")
             df = pd.concat([df, dic_df])
 
-        raw = re.sub('\*+\s*optimize[\s\S]+$','', raw)
-
         for v in re.findall('#.+\(.+?\)',raw):
             ch = re.search('#.+?\(',v).group()
             ch = re.sub('#|\(','',ch)
@@ -151,41 +136,9 @@ class Data:
         return df , raw
 
 
-
-
-    def __get_value(self, raw, key) -> str:
-        m_object = re.search(key+'=[\d\.\+e-]+', raw, flags=re.IGNORECASE)
-        if m_object:
-            return re.split('=', m_object.group())[1]
-        else:
-            raise ValueError("[ "+key+" ]の値が読み取れません。")
-
-    def __get_judge_spuid(self, raw : str) -> list:
-        squids = []
-        tmp = []
-        for line in raw.splitlines():
-            p_obj = re.search('\.print\s+phase.+',line, flags=re.IGNORECASE)
-            v_obj = re.search('\.print\s+devv.+',line, flags=re.IGNORECASE)
-            # 連続であることから　m_obj = None　になるまで　tmp に追加する。
-            if p_obj:
-                data_sub = re.sub('\s|\.print|phase','',p_obj.group(), flags=re.IGNORECASE)
-                tmp.append('P('+data_sub.upper()+')')
-            else:
-                if len(tmp)>0:
-                    squids.append(tmp)
-                    tmp = []
-            # 電圧の時
-            if v_obj:
-                data_sub = re.sub('\s|\.print|devv','',v_obj.group(), flags=re.IGNORECASE)
-                squids.append(['V('+data_sub.upper()+')'])
-            
-        return squids
-
-
     def __default_simulation(self,  plot = True) -> pd.DataFrame:
         df = self.data_simulation(self.vdf['def'])
-        if plot: 
-            # print("default 値でのシュミレーション結果")
+        if plot:
             df.plot(legend=False)
             plt.xlabel("Time(s)", size=18)# x軸指定
         return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
