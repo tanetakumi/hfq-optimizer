@@ -2,7 +2,8 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge3 import compare_switch_timmings, judge
+from .judge import judge
+from .config import Config
 from .calculator import shunt_calc, rand_norm
 import numpy as np
 import concurrent
@@ -24,18 +25,11 @@ plt.rcParams.update(config)
 
 class Data:
     def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
+        # get variable
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
-        self.default_result = self.__default_simulation(plot=plot)
-    
 
-        if show:
-            print("--- List of variables to optimize ---")
-            print(self.vdf)
-            print('\n')
-            print("--- timming of JJ switches ---")
-            for l in self.default_result:
-                print(l)
-
+        # check config file
+        self.conf : Config = Config(config)
 
     def __get_variable(self, raw : str) -> tuple:
         df = pd.DataFrame()
@@ -49,7 +43,6 @@ class Data:
             if not df.empty and char in df.index.tolist():
                 continue
             dic = {'def': None, 'main': None, 'sub': None, 'element':None,'fix': False ,'upper': None, 'lower': None ,'shunt': None,'dp': True,'dpv': None}
-            
             
             m = re.search('\(.+?\)',li).group()
             m = re.sub('\(|\)','',m)
@@ -141,7 +134,7 @@ class Data:
         if plot:
             df.plot(legend=False)
             plt.xlabel("Time(s)", size=18)# x軸指定
-        return judge(self.time_start, self.time_stop, self.pulse_interval, df, self.squids, plot)
+        return judge(self.conf : Config, df, self.squids, plot)
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
