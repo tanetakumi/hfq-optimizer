@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge import judge
+from .judge import get_switching_timing
 from .config import Config
 from .calculator import shunt_calc, rand_norm
 import numpy as np
@@ -129,12 +129,11 @@ class Data:
         return df , raw
 
 
-    def __default_simulation(self,  plot = True) -> pd.DataFrame:
+    def default_simulation(self,  plot = True) -> pd.DataFrame:
         df = self.data_simulation(self.vdf['def'])
         if plot:
-            df.plot(legend=False)
-            plt.xlabel("Time(s)", size=18)# x軸指定
-        return judge(self.conf : Config, df, self.squids, plot)
+            pass
+        return get_switching_timing(self.conf, df, self.squids, plot)
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
@@ -238,8 +237,6 @@ class Data:
 
         # ------------------------------ #
         # 変数
-        #
-        #
         # ------------------------------ #
         diff_margin_parcentage = 0.2
         loop1_count = l1c
@@ -273,7 +270,7 @@ class Data:
                 self.shunt_apply()
                 # 最初の一回はそのままのマージンを計算
                 if j > 0:
-                    self.scatter_apply()
+                    self.variation()
                 
                 pre_min_index = None    # ひとつ前の最小マージンを取るindex
                 for i in range(10):
@@ -374,7 +371,7 @@ class Data:
                 self.vdf.at[shunt_index, 'sub'] = shunt_calc(area=self.vdf.at[index, 'sub']) 
 
 
-    def scatter_apply(self):
+    def variation(self):
         for index in self.vdf.index:
             if self.vdf.at[index,'dp']:
                 tmp = self.vdf.at[index,'sub']
@@ -382,46 +379,3 @@ class Data:
                 up = self.vdf.at[index,'upper']
                 lo = self.vdf.at[index,'lower']
                 self.vdf.at[index,'sub'] = rand_norm(tmp, tmp*dpv/200, up, lo)
-
-
-    def __plot(self, margins : pd.DataFrame, filename = None):
-        # バーのcolor
-        plot_color = '#01b8aa'
-
-        df = margins.sort_index()
-        index = df.index
-        column0 = df['low(%)']
-        column1 = df['high(%)']
-
-        # --- biasのカラーを変更したリスト ---
-        index_color = []
-        for i in index:
-            if re.search('bias|Vb',i,flags=re.IGNORECASE):
-                index_color.append('red')
-            else:
-                index_color.append(plot_color)
-        # ------
-
-        # 図のサイズ　sharey:グラフの軸の共有(y軸)
-        fig, axes = plt.subplots(figsize=(10, len(index)/2.5), ncols=2, sharey=True)
-        plt.subplots_adjust(wspace=0)
-        plt.suptitle('Margins')
-        axes[0].set_ylabel("Elements", fontsize=20)
-        axes[1].set_xlabel("%", fontsize=20)
-
-        # 分割した 0 グラフ
-        axes[0].barh(index, column0, align='center', color=index_color)
-        axes[0].set_xlim(-100, 0)
-        axes[0].grid(axis='y')
-
-
-        # 分割した 1 グラフ
-        axes[1].barh(index, column1, align='center', color=index_color)
-        axes[1].set_xlim(0, 100)
-        axes[1].tick_params(axis='y', colors=plot_color)  # 1 グラフのメモリ軸の色をプロットの色と合わせて見れなくする
-        axes[1].grid(axis='y')
-
-
-        if filename != None:
-            fig.savefig(filename)
-            plt.close(fig)
