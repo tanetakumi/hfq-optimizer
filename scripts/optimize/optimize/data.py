@@ -12,24 +12,19 @@ import matplotlib.pyplot as plt
 import os
 import shutil
 
-# ----- Matplotlib の rc 設定 ----
-config = {
-    "font.size":18,
-    "axes.grid":True,
-    "figure.figsize":[10.0, 7.0],
-    "legend.fontsize": 18,
-    "lines.linewidth": 3
-}
-plt.rcParams.update(config)
-
 
 class Data:
     def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
+        
         # get variable
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
 
         # check config file
         self.conf : Config = Config(config)
+
+        # create netlist
+        self.sim_data = self.__create_netlist(self.sim_data, self.conf)
+
 
     def __get_variable(self, raw : str) -> tuple:
         df = pd.DataFrame()
@@ -125,15 +120,37 @@ class Data:
             ch = re.sub('#|\(','',ch)
             ch = "#("+ch+")"
             raw = raw.replace(v, ch)
-            
+
         return df , raw
+
+    def __create_netlist(self, netlist, conf : Config) -> str:
+        # raw のリセット
+        raw = ""
+        # .print .endの行を取得
+        for line in netlist.splitlines():
+            
+            print_obj = re.search('\.print',line, flags=re.IGNORECASE)
+            end_obj = re.search('\.end$',line, flags=re.IGNORECASE)
+            if not print_obj and not end_obj:
+                raw = raw + line + "\n"
+
+        if not conf.phase_ele==[]:
+            for ll in conf.phase_ele:
+                for l in ll:
+                    raw = raw + ".print phase " + l + "\n"
+
+        if not conf.voltage_ele==[]:
+            for ll in conf.voltage_ele:
+                for l in ll:
+                    raw = raw + ".print devv " + l + "\n"
+
+        raw = raw + ".end"
+        return raw
 
 
     def default_simulation(self,  plot = True) -> pd.DataFrame:
         df = self.data_simulation(self.vdf['def'])
-        if plot:
-            pass
-        return get_switching_timing(self.conf, df, self.squids, plot)
+        return get_switching_timing(self.conf, df, plot)
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:

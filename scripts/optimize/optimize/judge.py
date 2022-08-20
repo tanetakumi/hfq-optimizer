@@ -3,6 +3,7 @@ import math
 import re
 from .config import Config
 import matplotlib.pyplot as plt
+from .graph import phase_sim_plot
 
 def get_switching_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.DataFrame:
 
@@ -10,21 +11,19 @@ def get_switching_timing(config : Config, data : pd.DataFrame, plot = False) -> 
     p2 = math.pi * 2
 
     newDataframe = pd.DataFrame()
-    for squid in config.phase_ele:
-        if len(squid) == 1:
-            newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')']
-        elif len(squid) == 2:
-            newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')']
-        elif len(squid) == 3:
-            newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')'] + data['P('+squid[2]+')']
-    if plot:
-        plt.xlabel("Time(s)", size=18)# x軸指定
-        newDataframe.plot(legend=False)
+    if not config.phase_ele == []:
+        for squid in config.phase_ele:
+            if len(squid) == 1:
+                newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')']
+            elif len(squid) == 2:
+                newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')']
+            elif len(squid) == 3:
+                newDataframe['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')'] + data['P('+squid[2]+')']
+        
+        phase_sim_plot(newDataframe)
 
-    resultframe = []
-    for column_name, srs in newDataframe.iteritems():
-        if re.search('P\(.+\)',column_name, flags=re.IGNORECASE):
-
+        resultframe = []
+        for column_name, srs in newDataframe.iteritems():
             # バイアスをかけた時の状態の位相(初期位相)
             init_phase = srs[( srs.index > config.start_time ) & ( srs.index < config.end_time )].mean()
             
@@ -43,8 +42,9 @@ def get_switching_timing(config : Config, data : pd.DataFrame, plot = False) -> 
                     flag = flag - 1
                     resultframe.append({'time':srs.index[i], 'phase':flag, 'element':column_name})
 
-        elif re.search('V\(.+\)',column_name, flags=re.IGNORECASE):
-            srs_std = srs.rolling(window=10).std()
+    if not config.voltage_ele == []:
+        for vol in config.voltage_ele:
+            srs_std = data["V("+vol+")"].rolling(window=10).std()
             srs_std_max = srs_std.rolling(window=10).max()
             basis = srs_std_max.mean()/2
             reap = False
