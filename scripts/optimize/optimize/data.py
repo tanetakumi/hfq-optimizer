@@ -2,19 +2,20 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge import get_switching_timing
+from .judge import get_switch_timing, compare_switch_timings
 from .config import Config
 from .calculator import shunt_calc, rand_norm
+from .graph import margin_plot, sim_plot
 import numpy as np
 import concurrent
 import copy
-import matplotlib.pyplot as plt
 import os
+import sys
 import shutil
 
 
 class Data:
-    def __init__(self, raw_data : str, config : dict, show : bool = False, plot : bool = True):
+    def __init__(self, raw_data : str, config : dict):
         
         # get variable
         self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
@@ -24,6 +25,9 @@ class Data:
 
         # create netlist
         self.sim_data = self.__create_netlist(self.sim_data, self.conf)
+
+        # Base switch timing
+        self.base_switch_timing = None
 
 
     def __get_variable(self, raw : str) -> tuple:
@@ -140,17 +144,20 @@ class Data:
                     raw = raw + ".print phase " + l + "\n"
 
         if not conf.voltage_ele==[]:
-            for ll in conf.voltage_ele:
-                for l in ll:
-                    raw = raw + ".print devv " + l + "\n"
+            for l in conf.voltage_ele:
+                raw = raw + ".print devv " + l + "\n"
 
         raw = raw + ".end"
         return raw
 
 
-    def default_simulation(self,  plot = True) -> pd.DataFrame:
+    def get_base_switch_timing(self,  plot = True):
+        print("Simulate with default values.")
+
         df = self.data_simulation(self.vdf['def'])
-        return get_switching_timing(self.conf, df, plot)
+        if plot:
+            sim_plot(df)
+        self.base_switch_timing = get_switch_timing(self.conf, df, plot)
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
@@ -163,11 +170,15 @@ class Data:
 
 
     def __operation_judge(self, parameter : pd.Series):
-        res = judge(self.time_start, self.time_stop, self.pulse_interval, self.data_simulation(parameter), self.squids)
-        return compare_switch_timmings(res, self.default_result,self.time_delay)
+        res = get_switch_timing(self.conf, self.data_simulation(parameter))
+        return compare_switch_timings(res, self.base_switch_timing, self.conf)
 
 
-    def get_margins(self, plot : bool = False, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
+    def get_margins(self, plot : bool = True, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
+        if self.base_switch_timing == None:
+            print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
+            sys.exit()
+
         margin_columns_list = ['low(value)', 'low(%)', 'high(value)', 'high(%)']
 
         futures = []
@@ -186,7 +197,7 @@ class Data:
             margin_result.loc[result_dic["index"]] = result_dic["result"]
 
         if plot:
-            self.__plot(margin_result)
+            margin_plot(margin_result)
 
         return margin_result
 

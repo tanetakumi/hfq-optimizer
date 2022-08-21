@@ -12,15 +12,35 @@ config = {
 }
 plt.rcParams.update(config)
 
-def phase_sim_plot(df : pd.DataFrame):
+def phase_plot(df : pd.DataFrame):
     df.plot()    
     plt.xlabel("Time [s]", size=18)  # x軸指定
     plt.ylabel("Phase difference [rad]", size=18)    # y軸指定
 
-def voltage_sim_plot(df : pd.DataFrame):
+def voltage_plot(df : pd.DataFrame):
     df.plot()    
     plt.xlabel("Time [s]", size=18)  # x軸指定
     plt.ylabel("Voltage [V]", size=18)    # y軸指定
+
+def current_plot(df : pd.DataFrame):
+    df.plot()    
+    plt.xlabel("Time [s]", size=18)  # x軸指定
+    plt.ylabel("Current [A]", size=18)    # y軸指定
+
+def sim_plot(df : pd.DataFrame):
+    l = df.columns
+    phase_list = list(filter(lambda s: re.search('P\(.+\)',s, flags=re.IGNORECASE), l))
+    if not phase_list == []:
+        phase_plot(df.filter(items=phase_list))    
+
+    voltage_list = list(filter(lambda s: re.search('V\(.+\)',s, flags=re.IGNORECASE), l))
+    if not voltage_list == []:
+        voltage_plot(df.filter(items=voltage_list))
+        
+    current_list = list(filter(lambda s: re.search('I\(.+\)',s, flags=re.IGNORECASE), l))
+    if not current_list == []:
+        current_plot(df.filter(items=current_list))
+
 
 def margin_plot(margins : pd.DataFrame, filename = None):
     # バーのcolor
