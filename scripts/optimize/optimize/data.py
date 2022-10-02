@@ -158,6 +158,7 @@ class Data:
         if plot:
             sim_plot(df)
         self.base_switch_timing = get_switch_timing(self.conf, df, plot)
+        return self.base_switch_timing
 
 
     def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
