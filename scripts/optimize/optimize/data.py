@@ -407,4 +407,4 @@ class Data:
                 dpv = self.vdf.at[index,'dpv']
                 up = self.vdf.at[index,'upper']
                 lo = self.vdf.at[index,'lower']
-                self.vdf.at[index,'sub'] = rand_norm(tmp, tmp*dpv/200, up, lo)
+                self.vdf.at[index,'sub'] = rand_norm(tmp, abs(tmp*dpv/200), up, lo)
