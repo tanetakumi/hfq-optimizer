@@ -25,7 +25,7 @@ def get_switch_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.
         if plot:
             sim_plot(new_df)
 
-        for column_name, srs in new_df.iteritems():
+        for column_name, srs in new_df.items():
             # バイアスをかけた時の状態の位相(初期位相)
             init_phase = srs[( srs.index > config.start_time ) & ( srs.index < config.end_time )].mean()
             
