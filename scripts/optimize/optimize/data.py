@@ -18,13 +18,13 @@ class Data:
     def __init__(self, raw_data : str, config : dict):
         
         # get variable
-        self.vdf, self.sim_data = self.__get_variable(raw=raw_data)
+        self.vdf, self.raw_sim_data = self.__get_variable(raw=raw_data)
 
         # check config file
         self.conf : Config = Config(config)
 
         # create netlist
-        self.sim_data = self.__create_netlist(self.sim_data, self.conf)
+        self.sim_data = self.__create_netlist(self.raw_sim_data, self.conf)
 
         # Base switch timing
         self.base_switch_timing = None
@@ -150,28 +150,36 @@ class Data:
         raw = raw + ".end"
         return raw
 
+    def data_simulation(self,  plot = True):
+        copied_sim_data = self.raw_sim_data
+        parameters : pd.Series =  self.vdf['def']
+        for index in parameters.index:
+            copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameters[index]))
+        df = simulation(copied_sim_data)
+        if plot:
+            sim_plot(df)
+        return df
 
     def get_base_switch_timing(self,  plot = True):
         print("Simulate with default values.")
 
-        df = self.data_simulation(self.vdf['def'])
+        df = self.__data_sim(self.vdf['def'])
         if plot:
             sim_plot(df)
         self.base_switch_timing = get_switch_timing(self.conf, df, plot)
         return self.base_switch_timing
 
-
-    def data_simulation(self, parameter : pd.Series) -> pd.DataFrame:
+    def __data_sim(self, parameters : pd.Series) -> pd.DataFrame:
         copied_sim_data = self.sim_data
-        for index in parameter.index:
-            copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameter[index]))
+        for index in parameters.index:
+            copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameters[index]))
 
         df = simulation(copied_sim_data)
         return df
 
 
-    def __operation_judge(self, parameter : pd.Series):
-        res = get_switch_timing(self.conf, self.data_simulation(parameter))
+    def __operation_judge(self, parameters : pd.Series):
+        res = get_switch_timing(self.conf, self.__data_sim(parameters))
         return compare_switch_timings(res, self.base_switch_timing, self.conf)
 
 
@@ -206,13 +214,13 @@ class Data:
     def __get_margin(self, srs : pd.Series, target_ele : str, accuracy : int = 7):
 
         # deepcopy　をする
-        parameter : pd.Series = copy.deepcopy(srs)
+        parameters : pd.Series = copy.deepcopy(srs)
 
         # デフォルト値の抽出
-        default_v = parameter[target_ele]
+        default_v = parameters[target_ele]
 
         # 0%の値は動くか確認
-        if not self.__operation_judge(parameter):
+        if not self.__operation_judge(parameters):
             return {"index" : target_ele, "result" : (0, 0, 0, 0)}
 
         # lower ----------------- 
@@ -221,8 +229,8 @@ class Data:
         target_v = (high_v + low_v)/2
 
         for i in range(accuracy):
-            parameter[target_ele] = target_v
-            if self.__operation_judge(parameter):
+            parameters[target_ele] = target_v
+            if self.__operation_judge(parameters):
                 high_v = target_v
                 target_v = (high_v + low_v)/2
             else:
@@ -240,8 +248,8 @@ class Data:
 
         for i in range(accuracy):
 
-            parameter[target_ele] = target_v
-            if self.__operation_judge(parameter):
+            parameters[target_ele] = target_v
+            if self.__operation_judge(parameters):
                 if high_v == 0:
                     low_v = target_v
                     break
@@ -256,7 +264,7 @@ class Data:
         # -----------------
 
         # deepcopy　したものを削除
-        del parameter
+        del parameters
 
         return {"index" : target_ele, "result" : (lower_margin, lower_margin_rate, upper_margin, upper_margin_rate)}
 
@@ -288,7 +296,7 @@ class Data:
 
             second_min_margin = 0     # loop 2 のマージン
             margins_for_plot = None   # 保存するためのマージン保管場所
-            main_parameter = None     # 最適解のパラメータ
+            main_parameters = None     # 最適解のパラメータ
 
             
             for j in range(loop2_count):
@@ -332,7 +340,7 @@ class Data:
                         print("最適値の更新"+str(k)+":"+str(j)+":"+str(i)+"の最適化  ", min_margin, "%")
                         margins_for_plot = margins
                         second_min_margin = min_margin
-                        main_parameter = copy.copy(self.vdf['sub'])
+                        main_parameters = copy.copy(self.vdf['sub'])
 
                     else:
                         if min_margin + diff_margin_parcentage > second_min_margin:
@@ -375,17 +383,17 @@ class Data:
             if second_min_margin > first_min_margin:
                 print("--- "+str(k)+":x:x"+"の最適化  ", second_min_margin, "% ---")
                 first_min_margin = second_min_margin
-                self.vdf['main'] = main_parameter
+                self.vdf['main'] = main_parameters
                 
 
                 # 保存する
                 print("保存")
                 self.__plot(margins_for_plot, directory+"/"+str(k)+"-x.png")
-                main_parameter.to_csv(directory+"/"+str(k)+"-main.csv")
+                main_parameters.to_csv(directory+"/"+str(k)+"-main.csv")
                 with open(directory+"/"+str(k)+"-netlist.txt","w") as f:
                     copied_sim_data = self.sim_data
-                    for index in main_parameter.index:
-                        copied_sim_data = copied_sim_data.replace('#('+index+')', '#'+index+'('+ str(vaild_number(main_parameter[index],3))+')')
+                    for index in main_parameters.index:
+                        copied_sim_data = copied_sim_data.replace('#('+index+')', '#'+index+'('+ str(vaild_number(main_parameters[index],3))+')')
                     f.write(copied_sim_data)
 
             else:

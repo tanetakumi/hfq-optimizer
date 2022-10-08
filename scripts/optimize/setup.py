@@ -7,10 +7,11 @@ setup(
     install_requires=[
         "pandas",
         "matplotlib",
+        "numpy",
+        "scipy"
     ],
     author="tanetakumi",
-    author_email="nutanetakumi@yahoo.co.jp",
-    description="Optimize the circuits containing pi-josephoson",
+    description="Optimize the circuits containing pi-josephoson junction",
     url="https://github.com/tanetakumi/",
     python_requires='>=3.8',
 )
