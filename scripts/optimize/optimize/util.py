@@ -46,3 +46,16 @@ def vaild_number(x, num):
         return 0
     else:
         return round(x, num - math.floor(math.log10(abs(x)))- 1)
+
+def SIstr(num):
+    l = math.log(num,10)
+    if l >= -1:
+        return '{:.2f}'.format(num)
+    elif -1 > l and l >= -4:
+        return '{:.2f}'.format(num*10**3) + "m"
+    elif -4 > l and l >= -7:
+        return '{:.2f}'.format(num*10**6) + "u"
+    elif -7 > l and l >= -10:
+        return '{:.2f}'.format(num*10**9) + "n"
+    else:
+        return '{:.2f}'.format(num*10**12) + "p"
