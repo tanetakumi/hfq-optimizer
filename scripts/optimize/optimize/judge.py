@@ -16,11 +16,11 @@ def get_switch_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.
         new_df = pd.DataFrame()
         for squid in config.phase_ele:
             if len(squid) == 1:
-                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')']
+                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0].upper()+')']
             elif len(squid) == 2:
-                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')']
+                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0].upper()+')'] + data['P('+squid[1].upper()+')']
             elif len(squid) == 3:
-                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0]+')'] + data['P('+squid[1]+')'] + data['P('+squid[2]+')']
+                new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0].upper()+')'] + data['P('+squid[1].upper()+')'] + data['P('+squid[2].upper()+')']
     
         if plot:
             sim_plot(new_df)
