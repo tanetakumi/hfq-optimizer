@@ -182,18 +182,36 @@ class Data:
         res = get_switch_timing(self.conf, self.__data_sim(parameters))
         return compare_switch_timings(res, self.base_switch_timing, self.conf)
 
+    def get_critical_margin(self, param : pd.Series = None) -> tuple:
+        margins = self.get_margins(param = param, plot=False)
+        
+        min_margin = 100
+        min_ele = None
+        for element in margins.index:
+            if not self.vdf.at[element,'fix']:
+                # 最小マージンの素子を探す。
+                if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
+                    min_margin = vaild_number(min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)'])), 4)
+                    min_ele = element
+        
+        return (min_ele, min_margin)
 
-    def get_margins(self, plot : bool = True, accuracy : int = 8, thread : int = 8) -> pd.DataFrame:
+
+    # Use parameters of vdf['sub']
+    def get_margins(self, param : pd.Series = None, plot : bool = True, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
         if self.base_switch_timing == None:
             print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
             sys.exit()
+        
+        if param == None:
+            param = self.vdf['def']
 
         margin_columns_list = ['low(value)', 'low(%)', 'high(value)', 'high(%)']
 
         futures = []
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
         for index in self.vdf.index:
-            future = executor.submit(self.__get_margin, self.vdf['sub'], index, accuracy)
+            future = executor.submit(self.__get_margin, param, index, accuracy)
             futures.append(future)
 
         # result を受け取る dataframe
@@ -309,31 +327,31 @@ class Data:
                 if j > 0:
                     self.variation()
                 
-                pre_min_index = None    # ひとつ前の最小マージンを取るindex
+                pre_min_ele = None    # ひとつ前の最小マージンを取るindex
                 for i in range(10):
                     print(str(k)+":"+str(j)+":"+str(i)+"の最適化")
                     # マージンの計算
-                    margins = self.get_margins()
+                    margins = self.get_margins(param=self.vdf['sub'])
 
                     min_margin = 100
                     
-                    min_index = None
+                    min_ele = None
                     for element in margins.index:
                         if not self.vdf.at[element,'fix']:
                             # 最小マージンの素子を探す。
                             if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
                                 min_margin = vaild_number(min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)'])), 4)
-                                min_index = element
+                                min_ele = element
                     
                     if 'BIAS' in margins.index:
                         bias_margin =  vaild_number(min(abs(margins.at['BIAS','low(%)']), abs(margins.at['BIAS','high(%)'])), 4)
                         print("バイアスマージン : ",bias_margin)
 
-                    print("最小マージン : ", min_index, "  ", min_margin)
+                    print("最小マージン : ", min_ele, "  ", min_margin)
 
                     #　logへのマージンの書き込み
                     with open(directory+"/log.txt", 'a') as f:
-                        f.write(str(k)+":"+str(j)+":"+str(i)+"の最小マージン : "+ str(min_index)+ "  "+ str(min_margin)+'\n') 
+                        f.write(str(k)+":"+str(j)+":"+str(i)+"の最小マージン : "+ str(min_ele)+ "  "+ str(min_margin)+'\n') 
 
                     
                     if min_margin > second_min_margin:
@@ -355,23 +373,23 @@ class Data:
                     if min_margin == 0:     # 最小マージンが0
                         break
 
-                    if pre_min_index == min_index:      # 同じものが最適化対象
+                    if pre_min_ele == min_ele:      # 同じものが最適化対象
                         break
-                    pre_min_index = min_index
+                    pre_min_ele = min_ele
 
 
 
                     # 最大マージンと最小マージンの中間点を次の最適化対象にする。最小値最大値を考慮
-                    shifted_value = ( margins.at[min_index,'low(value)'] + margins.at[min_index,'high(value)'] )/2
-                    lower_limit = self.vdf.at[min_index,'lower']
-                    upper_limit = self.vdf.at[min_index,'upper']
+                    shifted_value = ( margins.at[min_ele,'low(value)'] + margins.at[min_ele,'high(value)'] )/2
+                    lower_limit = self.vdf.at[min_ele,'lower']
+                    upper_limit = self.vdf.at[min_ele,'upper']
 
                     if lower_limit != None and shifted_value < lower_limit:
-                        self.vdf.at[min_index,'sub'] = lower_limit
+                        self.vdf.at[min_ele,'sub'] = lower_limit
                     elif upper_limit != None and shifted_value < upper_limit:
-                        self.vdf.at[min_index,'sub'] = upper_limit
+                        self.vdf.at[min_ele,'sub'] = upper_limit
                     else:
-                        self.vdf.at[min_index,'sub'] = shifted_value
+                        self.vdf.at[min_ele,'sub'] = shifted_value
 
                 # -------- loop 2 end --------
 

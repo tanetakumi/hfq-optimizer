@@ -59,3 +59,11 @@ def SIstr(num):
         return '{:.2f}'.format(num*10**9) + "n"
     else:
         return '{:.2f}'.format(num*10**12) + "p"
+
+def create_inp_df(*args):
+    if not len(args)%4 == 0:
+        raise ValueError("引数は tag1, start1, stop1, increment1, tag2, start2, stop2, increment2, .....を指定してください")
+
+    spl_list = [args[idx:idx + 4] for idx in range(0, len(args), 4)]
+    col_list = [l[0] for l in spl_list]
+    pro_list = [[i for i in range(l[1],l[2]+l[3],l[3]) ] for l in spl_list]
