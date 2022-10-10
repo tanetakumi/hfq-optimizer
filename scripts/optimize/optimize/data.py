@@ -1,3 +1,4 @@
+from cmath import nan
 import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
@@ -12,6 +13,7 @@ import copy
 import os
 import sys
 import shutil
+from tqdm import tqdm
 
 
 class Data:
@@ -177,12 +179,26 @@ class Data:
         df = simulation(copied_sim_data)
         return df
 
-
     def __operation_judge(self, parameters : pd.Series):
         res = get_switch_timing(self.conf, self.__data_sim(parameters))
         return compare_switch_timings(res, self.base_switch_timing, self.conf)
 
-    def get_critical_margin(self, param : pd.Series = None) -> tuple:
+
+    def custom_simulation(self, res_df : pd.DataFrame):
+        param = copy.deepcopy(self.vdf['def'])
+        res_df['margin'] = 0
+
+        for num, srs in tqdm(res_df.iterrows(), total=len(res_df)):
+
+            # 値の書き換え
+            for colum, value in srs.items():
+                if not colum == 'param':
+                    param[colum] = value
+
+            res_df.at[num,'margin'] = self.get_critical_margin(param = param)[1]
+        return res_df
+
+    def get_critical_margin(self, param : pd.Series = pd.Series(dtype='float64')) -> tuple:
         margins = self.get_margins(param = param, plot=False)
         
         min_margin = 100
@@ -196,14 +212,15 @@ class Data:
         
         return (min_ele, min_margin)
 
-
     # Use parameters of vdf['sub']
-    def get_margins(self, param : pd.Series = None, plot : bool = True, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+    def get_margins(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
         if self.base_switch_timing == None:
             print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
             sys.exit()
         
-        if param == None:
+        # print(param)
+        if param.empty:
+            print("empty")
             param = self.vdf['def']
 
         margin_columns_list = ['low(value)', 'low(%)', 'high(value)', 'high(%)']

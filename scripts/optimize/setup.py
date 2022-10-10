@@ -8,7 +8,9 @@ setup(
         "pandas",
         "matplotlib",
         "numpy",
-        "scipy"
+        "scipy",
+        "itertools",
+        "tqdm"
     ],
     author="tanetakumi",
     description="Optimize the circuits containing pi-josephoson junction",

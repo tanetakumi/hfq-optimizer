@@ -1,5 +1,7 @@
 import re
 import math
+import itertools
+import pandas as pd
 
 def isint(s):  # 正規表現を使って判定を行う
     p = '[-+]?\d+'
@@ -67,3 +69,4 @@ def create_inp_df(*args):
     spl_list = [args[idx:idx + 4] for idx in range(0, len(args), 4)]
     col_list = [l[0] for l in spl_list]
     pro_list = [[i for i in range(l[1],l[2]+l[3],l[3]) ] for l in spl_list]
+    return pd.DataFrame(itertools.product(*pro_list), columns=col_list)
