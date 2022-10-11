@@ -12,20 +12,24 @@ config = {
 }
 plt.rcParams.update(config)
 
+
 def phase_plot(df : pd.DataFrame):
     df.plot()    
     plt.xlabel("Time [s]", size=18)  # x軸指定
     plt.ylabel("Phase difference [rad]", size=18)    # y軸指定
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def voltage_plot(df : pd.DataFrame):
     df.plot()    
     plt.xlabel("Time [s]", size=18)  # x軸指定
     plt.ylabel("Voltage [V]", size=18)    # y軸指定
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def current_plot(df : pd.DataFrame):
     df.plot()    
     plt.xlabel("Time [s]", size=18)  # x軸指定
     plt.ylabel("Current [A]", size=18)    # y軸指定
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def sim_plot(df : pd.DataFrame):
     l = df.columns

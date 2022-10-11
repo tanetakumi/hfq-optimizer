@@ -8,7 +8,7 @@ from .config import Config
 from .calculator import shunt_calc, rand_norm
 from .graph import margin_plot, sim_plot
 import numpy as np
-import concurrent
+import concurrent.futures
 import copy
 import os
 import sys

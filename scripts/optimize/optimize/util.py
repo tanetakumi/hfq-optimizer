@@ -2,6 +2,7 @@ import re
 import math
 import itertools
 import pandas as pd
+import numpy as np
 
 def isint(s):  # 正規表現を使って判定を行う
     p = '[-+]?\d+'
@@ -27,20 +28,6 @@ def stringToNum(s):
     else:
         raise ValueError("値が数値ではありません。")
 
-
-def vround(number : float, digit : int = 3) -> float:
-    m_obj = re.search('\.',str(number))
-    if m_obj:
-        zero_obj = re.search('^0\.0*',str(number))
-        if zero_obj:
-            return round(number,zero_obj.end() -2 + digit)
-        else:
-            if m_obj.start() >= digit:
-                return int(number)
-            else:
-                return round(number, digit - m_obj.start())
-    else:
-        return int(number)
 
 
 def vaild_number(x, num):
@@ -68,5 +55,5 @@ def create_inp_df(*args):
 
     spl_list = [args[idx:idx + 4] for idx in range(0, len(args), 4)]
     col_list = [l[0] for l in spl_list]
-    pro_list = [[i for i in range(l[1],l[2]+l[3],l[3]) ] for l in spl_list]
+    pro_list = [ np.round(np.arange(l[1],l[2]+l[3],l[3]),3) for l in spl_list]
     return pd.DataFrame(itertools.product(*pro_list), columns=col_list)
