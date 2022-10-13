@@ -67,7 +67,7 @@ def margin_plot(margins : pd.DataFrame, filename = None):
     # 図のサイズ　sharey:グラフの軸の共有(y軸)
     fig, axes = plt.subplots(figsize=(10, len(index)/2.5), ncols=2, sharey=True)
     plt.subplots_adjust(wspace=0)
-    plt.suptitle('Margins')
+    fig.suptitle("Margins", y=1.1)
     axes[0].set_ylabel("Elements", fontsize=20)
     axes[1].set_xlabel("%", fontsize=20)
 

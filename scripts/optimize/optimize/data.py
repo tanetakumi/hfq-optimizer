@@ -220,26 +220,34 @@ class Data:
         
         # print(param)
         if param.empty:
-            print("empty")
+            print("Using default parameters")
             param = self.vdf['def']
 
         margin_columns_list = ['low(value)', 'low(%)', 'high(value)', 'high(%)']
 
-        futures = []
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=thread)
-        for index in self.vdf.index:
-            future = executor.submit(self.__get_margin, param, index, accuracy)
-            futures.append(future)
-
         # result を受け取る dataframe
         margin_result = pd.DataFrame(columns = margin_columns_list)
-        
-        for future in concurrent.futures.as_completed(futures):
-            # 結果を受け取り
-            result_dic= future.result()
-            # variables dataframeに追加
-            margin_result.loc[result_dic["index"]] = result_dic["result"]
 
+        # 0%の値は動くか確認
+        if not self.__operation_judge(param):
+            for index in self.vdf.index:
+                margin_result.loc[index] = 0
+
+        else:
+            futures = []
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=thread) as executor:
+                for index in self.vdf.index:
+                    future = executor.submit(self.__get_margin, param, index, accuracy)
+                    futures.append(future)
+            
+            for future in concurrent.futures.as_completed(futures):
+                # 結果を受け取り
+                result_dic= future.result()
+                # variables dataframeに追加
+                margin_result.loc[result_dic["index"]] = result_dic["result"]
+
+        # plot     
         if plot:
             margin_plot(margin_result)
 
@@ -253,10 +261,6 @@ class Data:
 
         # デフォルト値の抽出
         default_v = parameters[target_ele]
-
-        # 0%の値は動くか確認
-        if not self.__operation_judge(parameters):
-            return {"index" : target_ele, "result" : (0, 0, 0, 0)}
 
         # lower ----------------- 
         high_v = default_v
