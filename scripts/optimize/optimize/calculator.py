@@ -69,7 +69,7 @@ def rand_norm(mean, std, upper = None, lower = None):
 
     return truncnorm(a, b, loc=mean, scale=std).rvs()
 
-def ig_max(L, Ic, strout = False):
+def nominal_ic(L, Ic, strout = False):
     x = (L * Ic) / (2.07*10**(-15))
     result = (0.5263*x**6 -2.3279*x**5 + 3.4434*x**4 - 1.0023*x**3 - 2.5876*x**2 + 3.341*x)*Ic
     if strout:
