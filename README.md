@@ -12,6 +12,7 @@ Development of optimization tool for HFQ/SFQ circuits
     -   If you open Ubuntu and the default user is root, create the user as follows.
         ```
         adduser <username>
+        usermod -aG sudo <username>
         ```
         <img src="https://user-images.githubusercontent.com/75787495/197215860-cf6902d5-f1f4-4183-80a4-0700597dcaf4.png" height="400" />
     -   Next, open the PowerShell and run this command.
