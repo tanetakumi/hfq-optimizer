@@ -94,6 +94,26 @@ def compare_switch_timings(dl1 : list, dl2 : list, config : Config) -> bool:
 
 def state_judgement(dl1 : list, config : Config) -> bool:
 
+    #入力と出力のdict_listを分ける
+    def separate_inout(dict_list : list, output_ele : str) -> dict:
+        output_dl=list()
+        input_dl=list()
+        if len(dict_list)==0:
+            td=dict()
+            td.setdefault('input_dl',input_dl)
+            td.setdefault('output_dl',output_dl)
+            return td
+        else:
+            for d in dict_list:
+                if d['element']==output_ele:
+                    output_dl.append(d)
+                else:
+                    input_dl.append(d)
+        td=dict()
+        td.setdefault('input_dl',input_dl)
+        td.setdefault('output_dl',output_dl)
+        return td
+
     #dict_listの中で一番最初のスイッチの記録(dict)を得る
     def first_switch(dict_list : list) -> dict:
         #re_list=list()
@@ -205,12 +225,13 @@ def state_judgement(dl1 : list, config : Config) -> bool:
 
     #スイッチ記録をコピーして
     dl=dl1
-    #print(dl)
     #elementフォーマット
     output_ele='P('+'+'.join(config.output_element)+')'
+    #入力と出力で分ける
+    inout_dict=separate_inout(dl, output_ele)
     while True:
         #一番最初にスイッチした素子を探す
-        switch_log=first_switch(dl)
+        switch_log=first_switch(inout_dict['input_dl'])
         #対応する遷移があるか探す
         #無ければ例外が投げられるのでキャッチしてFalse終了
         try:
@@ -219,9 +240,9 @@ def state_judgement(dl1 : list, config : Config) -> bool:
             #print('A')
             return False
         #確認したスイッチ記録は削除する
-        delete_first_switch(dl,switch_log['element'])
+        delete_first_switch(inout_dict['input_dl'],switch_log['element'])
         #outputを調べる
-        if not search_output(dl, switch_log['time'], SM.output, output_ele, config.output_interval):
+        if not search_output(inout_dict['output_dl'], switch_log['time'], SM.output, output_ele, config.output_interval):
             #Falseが戻ってきたらFalse終了
             #print('B')
             return False

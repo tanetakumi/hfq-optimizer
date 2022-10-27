@@ -64,6 +64,8 @@ class Config:
         self.allow_multi_swithes = config_data["allow.multi.swithes"]
 
         if self.state_judge:
+            #self.voltage_eleは要らない
+            self.voltage_ele = []
             self.state_judge = config_data["state_judge"]
             self.list_of_state = config_data["list_of_state"]
             self.list_of_transition = config_data["list_of_transition"]
