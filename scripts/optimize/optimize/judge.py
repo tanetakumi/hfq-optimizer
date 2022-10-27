@@ -123,6 +123,8 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         empty_flag=bool()
         earlest_sw_t=float()
         for l in dl:
+            #print('l[ele]='+l['element'])
+            #print('output_ele='+output_ele)
             if l['element']==output_ele:
                 dl_t.append(l)
                 sw_t.append(l['time'])
@@ -130,28 +132,38 @@ def state_judgement(dl1 : list, config : Config) -> bool:
             empty_flag=True
         else:
             empty_flag=False
+            #print('sw_t')
+            #print(sw_t)
             earlest_sw_t=min(sw_t)
             indx=sw_t.index(earlest_sw_t)
         if output_type:
             if empty_flag:
+                #print('a')
                 return False
             if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
                 #確認したoutputは削除する
                 dl.remove(dl_t[indx])
+                #print('b')
                 return True
             else:
+                #print('c')
                 return False
         else:
             if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
                 #False終了なので削除する必要はない
                 #dl.remove(dl_t[indx])
+                #print('d')
                 return False
             if earlest_sw_t<input_time:
                 #False終了なので削除する必要はない
                 #dl.remove(dl_t[indx])
+                #print(earlest_sw_t)
+                #print(input_time)
+                #print('e')
                 return False
             if (input_time+output_interval)<earlest_sw_t or empty_flag:
                 #削除しない
+                #print('f')
                 return True
             
 
@@ -193,9 +205,9 @@ def state_judgement(dl1 : list, config : Config) -> bool:
 
     #スイッチ記録をコピーして
     dl=dl1
+    #print(dl)
     #elementフォーマット
-    for squid in config.output_element:
-        output_ele='P('+'+'.join(squid)+')'
+    output_ele='P('+'+'.join(config.output_element)+')'
     while True:
         #一番最初にスイッチした素子を探す
         switch_log=first_switch(dl)
@@ -204,12 +216,14 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         try:
             SM.trigger(switch_log['element'])
         except transitions.core.MachineError as e:
+            #print('A')
             return False
         #確認したスイッチ記録は削除する
         delete_first_switch(dl,switch_log['element'])
         #outputを調べる
         if not search_output(dl, switch_log['time'], SM.output, output_ele, config.output_interval):
             #Falseが戻ってきたらFalse終了
+            #print('B')
             return False
         #初期値に戻す
         SM.output=False
@@ -217,6 +231,7 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         if len(dl)==0:
             break
     #全てクリアならTrue終了
+    #print('C')
     return True
 
 
