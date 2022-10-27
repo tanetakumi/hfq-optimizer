@@ -1,9 +1,11 @@
 import pandas as pd
 import math
 import re
+import transitions
 from .config import Config
 import matplotlib.pyplot as plt
 from .graph import sim_plot
+from transitions import Machine
 
 def get_switch_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.DataFrame:
 
@@ -89,4 +91,159 @@ def compare_switch_timings(dl1 : list, dl2 : list, config : Config) -> bool:
     else:
         return False
     
- 
+
+def state_judgement(dl1 : list, config : Config) -> bool:
+
+    #入力と出力のdict_listを分ける
+    def separate_inout(dict_list : list, output_ele : str) -> dict:
+        output_dl=list()
+        input_dl=list()
+        if len(dict_list)==0:
+            td=dict()
+            td.setdefault('input_dl',input_dl)
+            td.setdefault('output_dl',output_dl)
+            return td
+        else:
+            for d in dict_list:
+                if d['element']==output_ele:
+                    output_dl.append(d)
+                else:
+                    input_dl.append(d)
+        td=dict()
+        td.setdefault('input_dl',input_dl)
+        td.setdefault('output_dl',output_dl)
+        return td
+
+    #dict_listの中で一番最初のスイッチの記録(dict)を得る
+    def first_switch(dict_list : list) -> dict:
+        if len(dict_list)==0:
+            raise ValueError("\033[31mNo switch.\033[0m")
+        sw_t=list()
+        for dl in dict_list:
+            sw_t.append(dl['time'])
+        indx=sw_t.index(min(sw_t))
+        return dict_list[indx]
+
+    #dlの中のある素子の一番最初のスイッチ記録を削除する
+    def delete_first_switch(dl : list, element : str):
+        dl_t=list()
+        sw_t=list()
+        for l in dl:
+            if l['element']==element:
+                dl_t.append(l)
+                sw_t.append(l['time'])
+        indx=sw_t.index(min(sw_t))
+        dl.remove(dl_t[indx])
+
+    def search_output(dl : list, input_time : float, output_type : bool, output_ele : str, output_interval : float) -> bool:
+        dl_t=list()
+        sw_t=list()
+        empty_flag=bool()
+        earlest_sw_t=float()
+        for l in dl:
+            if l['element']==output_ele:
+                dl_t.append(l)
+                sw_t.append(l['time'])
+        if len(sw_t)==0:
+            empty_flag=True
+        else:
+            empty_flag=False
+            earlest_sw_t=min(sw_t)
+            indx=sw_t.index(earlest_sw_t)
+        if output_type:
+            if empty_flag:
+                return False
+            if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
+                #確認したoutputは削除する
+                dl.remove(dl_t[indx])
+                return True
+            else:
+                return False
+        else:
+            if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
+                #False終了なので削除する必要はない
+                #dl.remove(dl_t[indx])
+                return False
+            if earlest_sw_t<input_time:
+                #False終了なので削除する必要はない
+                #dl.remove(dl_t[indx])
+                return False
+            if (input_time+output_interval)<earlest_sw_t or empty_flag:
+                #削除しない
+                #print('f')
+                return True
+            
+
+    """
+    @dataclass
+    class transition_with_output:
+        list_of_transition_w_output=list()
+        list_of_transition_wo_output=list()
+        #def __init__(list_of_transition : list):
+    """
+    
+    class StateMachine(object):
+        #初期化（ステートマシンの定義：とりうる状態の定義、初期状態の定義、各種遷移と紐付くアクションの定義）
+        def __init__(self, name, list_of_state : list ,list_of_transition : list, initial_state : str):
+            self.name = name
+            self.output = False
+            self.machine = Machine(model=self, states=list_of_state, initial=initial_state, auto_transitions=False)
+            for lt in list_of_transition:
+                trigger_temp=str()
+                trigger_temp='P('+'+'.join(lt[0])+')'
+                if len(lt)==3:
+                    self.machine.add_transition(trigger_temp, source=lt[1],  dest=lt[2])
+                if len(lt)==4:
+                    self.machine.add_transition(trigger_temp, source=lt[1],  dest=lt[2], after=lt[3])
+                else:
+                    raise ValueError("\033[31mSize of [list_of_transition] is 3 or 4.\033[0m")
+
+        #以下、遷移時のアクション
+        def True_Output(self):
+            self.output = True
+
+        def False_Output(self):
+            self.output = False
+
+
+    SM=StateMachine('SM', config.list_of_state ,config.list_of_transition, config.initial_state)
+    
+    #スイッチ記録をコピーして
+    dl=dl1
+    #elementフォーマット
+    output_ele='P('+'+'.join(config.output_element)+')'
+    #入力と出力で分ける
+    inout_dict=separate_inout(dl, output_ele)
+    while True:
+        #一番最初に入力でスイッチした素子を探す
+        #スイッチ記録が無ければ例外が投げられるのでキャッチしてFalse終了
+        try:
+            switch_log=first_switch(inout_dict['input_dl'])
+        except ValueError as e:
+            return False
+        #対応する遷移があるか探す
+        #無ければ例外が投げられるのでキャッチしてFalse終了
+        try:
+            SM.trigger(switch_log['element'])
+        except transitions.core.MachineError as e:
+            #print('A')
+            return False
+        #確認したスイッチ記録は削除する
+        delete_first_switch(inout_dict['input_dl'],switch_log['element'])
+        #outputを調べる
+        if not search_output(inout_dict['output_dl'], switch_log['time'], SM.output, output_ele, config.output_interval):
+            #Falseが戻ってきたらFalse終了
+            return False
+        #初期値に戻す
+        SM.output=False
+        #全ての入力のスイッチ記録を確認したらbreak
+        if len(inout_dict['input_dl'])==0:
+            break
+    #全てクリアならTrue終了
+    return True
+
+
+
+    
+
+
