@@ -167,8 +167,7 @@ def state_judgement(dl1 : list, config : Config) -> bool:
             lt_temp=list()
             for lt in list_of_transition:
                 trigger_temp=str()
-                for squid in lt:
-                    trigger_temp='P('+'+'.join(squid[0])+')'
+                trigger_temp='P('+'+'.join(lt[0])+')'
                 if len(lt)==3:
                     self.machine.add_transition(trigger_temp, source=lt[1],  dest=lt[2])
                 if len(lt)==4:
