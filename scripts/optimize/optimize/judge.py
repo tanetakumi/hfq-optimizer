@@ -116,14 +116,12 @@ def state_judgement(dl1 : list, config : Config) -> bool:
 
     #dict_listの中で一番最初のスイッチの記録(dict)を得る
     def first_switch(dict_list : list) -> dict:
-        #re_list=list()
         if len(dict_list)==0:
             raise ValueError("\033[31mNo switch.\033[0m")
         sw_t=list()
         for dl in dict_list:
             sw_t.append(dl['time'])
         indx=sw_t.index(min(sw_t))
-        #re_list=dict_list[indx]
         return dict_list[indx]
 
     #dlの中のある素子の一番最初のスイッチ記録を削除する
@@ -143,8 +141,6 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         empty_flag=bool()
         earlest_sw_t=float()
         for l in dl:
-            #print('l[ele]='+l['element'])
-            #print('output_ele='+output_ele)
             if l['element']==output_ele:
                 dl_t.append(l)
                 sw_t.append(l['time'])
@@ -152,34 +148,25 @@ def state_judgement(dl1 : list, config : Config) -> bool:
             empty_flag=True
         else:
             empty_flag=False
-            #print('sw_t')
-            #print(sw_t)
             earlest_sw_t=min(sw_t)
             indx=sw_t.index(earlest_sw_t)
         if output_type:
             if empty_flag:
-                #print('a')
                 return False
             if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
                 #確認したoutputは削除する
                 dl.remove(dl_t[indx])
-                #print('b')
                 return True
             else:
-                #print('c')
                 return False
         else:
             if input_time<earlest_sw_t and earlest_sw_t<(input_time+output_interval):
                 #False終了なので削除する必要はない
                 #dl.remove(dl_t[indx])
-                #print('d')
                 return False
             if earlest_sw_t<input_time:
                 #False終了なので削除する必要はない
                 #dl.remove(dl_t[indx])
-                #print(earlest_sw_t)
-                #print(input_time)
-                #print('e')
                 return False
             if (input_time+output_interval)<earlest_sw_t or empty_flag:
                 #削除しない
@@ -201,7 +188,6 @@ def state_judgement(dl1 : list, config : Config) -> bool:
             self.name = name
             self.output = False
             self.machine = Machine(model=self, states=list_of_state, initial=initial_state, auto_transitions=False)
-            lt_temp=list()
             for lt in list_of_transition:
                 trigger_temp=str()
                 trigger_temp='P('+'+'.join(lt[0])+')'
@@ -221,8 +207,7 @@ def state_judgement(dl1 : list, config : Config) -> bool:
 
 
     SM=StateMachine('SM', config.list_of_state ,config.list_of_transition, config.initial_state)
-    #now_state=config.initial_state
-
+    
     #スイッチ記録をコピーして
     dl=dl1
     #elementフォーマット
@@ -230,8 +215,12 @@ def state_judgement(dl1 : list, config : Config) -> bool:
     #入力と出力で分ける
     inout_dict=separate_inout(dl, output_ele)
     while True:
-        #一番最初にスイッチした素子を探す
-        switch_log=first_switch(inout_dict['input_dl'])
+        #一番最初に入力でスイッチした素子を探す
+        #スイッチ記録が無ければ例外が投げられるのでキャッチしてFalse終了
+        try:
+            switch_log=first_switch(inout_dict['input_dl'])
+        except ValueError as e:
+            return False
         #対応する遷移があるか探す
         #無ければ例外が投げられるのでキャッチしてFalse終了
         try:
@@ -244,15 +233,13 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         #outputを調べる
         if not search_output(inout_dict['output_dl'], switch_log['time'], SM.output, output_ele, config.output_interval):
             #Falseが戻ってきたらFalse終了
-            #print('B')
             return False
         #初期値に戻す
         SM.output=False
-        #全てのスイッチ記録を確認したらbreak
-        if len(dl)==0:
+        #全ての入力のスイッチ記録を確認したらbreak
+        if len(inout_dict['input_dl'])==0:
             break
     #全てクリアならTrue終了
-    #print('C')
     return True
 
 
