@@ -206,6 +206,8 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         if not search_output(dl, switch_log['time'], SM.output, output_ele, config.output_interval):
             #Falseが戻ってきたらFalse終了
             return False
+        #初期値に戻す
+        SM.output=False
         #全てのスイッチ記録を確認したらbreak
         if len(dl)==0:
             break
