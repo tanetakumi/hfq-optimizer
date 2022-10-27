@@ -3,7 +3,7 @@ import re
 import pandas as pd
 from .util import stringToNum, isfloat, isint, vaild_number
 from .pyjosim import simulation
-from .judge import get_switch_timing, compare_switch_timings
+from .judge import get_switch_timing, compare_switch_timings, state_judgement
 from .config import Config
 from .calculator import shunt_calc, rand_norm
 from .graph import margin_plot, sim_plot
@@ -181,7 +181,10 @@ class Data:
 
     def __operation_judge(self, parameters : pd.Series):
         res = get_switch_timing(self.conf, self.__data_sim(parameters))
-        return compare_switch_timings(res, self.base_switch_timing, self.conf)
+        if self.conf.state_judge==False:
+            return compare_switch_timings(res, self.base_switch_timing, self.conf)
+        else:
+            return state_judgement(res, self.conf)
 
 
     def custom_simulation(self, res_df : pd.DataFrame):
