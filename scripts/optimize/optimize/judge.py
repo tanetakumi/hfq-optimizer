@@ -94,8 +94,8 @@ def compare_switch_timings(dl1 : list, dl2 : list, config : Config) -> bool:
 
 def state_judgement(dl1 : list, config : Config) -> bool:
 
-    #dict_listの中で一番最初のスイッチの記録(dict_list)を得る
-    def first_switch(dict_list : list) -> list:
+    #dict_listの中で一番最初のスイッチの記録(dict)を得る
+    def first_switch(dict_list : list) -> dict:
         #re_list=list()
         if len(dict_list)==0:
             raise ValueError("\033[31mNo switch.\033[0m")
@@ -198,13 +198,13 @@ def state_judgement(dl1 : list, config : Config) -> bool:
         #対応する遷移があるか探す
         #無ければ例外が投げられるのでキャッチしてFalse終了
         try:
-            SM.trigger(switch_log[0]['element'])
+            SM.trigger(switch_log['element'])
         except transitions.core.MachineError as e:
             return False
         #確認したスイッチ記録は削除する
-        delete_first_switch(dl,switch_log[0]['element'])
+        delete_first_switch(dl,switch_log['element'])
         #outputを調べる
-        if not search_output(dl, switch_log[0]['time'], SM.output, output_ele, config.output_interval):
+        if not search_output(dl, switch_log['time'], SM.output, output_ele, config.output_interval):
             #Falseが戻ってきたらFalse終了
             return False
         #全てのスイッチ記録を確認したらbreak
