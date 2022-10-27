@@ -5,7 +5,6 @@ class Config:
         for k in ["avgcalc.start.time", "avgcalc.end.time", "pulse.delay", "pulse.interval","phase.ele","voltage.ele","allow.multi.swithes","state_judge"]:
             if not k in config_data:
                 raise ValueError("\033[31m["+k+"]の値が読み取れません。"+"\033[0m")
-        #,"list_of_state","list_of_transition","initial_state","output_ele","output_interval"
 
         if not type(config_data["avgcalc.start.time"]) == float:
             raise ValueError("\033[31m[avgcalc.start.time]の値が読み取れません。\033[0m")
