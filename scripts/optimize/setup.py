@@ -9,7 +9,6 @@ setup(
         "matplotlib",
         "numpy",
         "scipy",
-        "itertools",
         "tqdm"
     ],
     author="tanetakumi",
