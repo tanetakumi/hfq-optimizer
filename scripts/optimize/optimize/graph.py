@@ -1,34 +1,49 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import re
-
+import math
 # ----- Matplotlib の rc 設定 ----
 config = {
-    "font.size":18,
+    "font.size":20,
     "axes.grid":True,
     "figure.figsize":[10.0, 7.0],
     "legend.fontsize": 18,
-    "lines.linewidth": 3
+    "lines.linewidth": 3,
+    #"font.family": "Times New Roman",
+    #"axes.unicode_minus": False
 }
 plt.rcParams.update(config)
 
 
 def phase_plot(df : pd.DataFrame):
-    df.plot()    
-    plt.xlabel("Time [s]", size=18)  # x軸指定
-    plt.ylabel("Phase difference [rad]", size=18)    # y軸指定
+    df.plot()
+    max_y = df.max().max()
+    val = 0
+    y_list = []
+    y_list_str = []
+    while (val-2)*math.pi < max_y:
+        y_list.append(val*math.pi)
+        y_list_str.append(str(val)+"π")
+        val += 2
+    plt.xlim(left = 0)
+    plt.yticks(y_list, y_list_str)
+    plt.tick_params(labelsize=28)
+    plt.xlabel("Time [s]", size=32)  # x軸指定
+    plt.ylabel("Phase difference [rad]", size=32)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def voltage_plot(df : pd.DataFrame):
-    df.plot()    
-    plt.xlabel("Time [s]", size=18)  # x軸指定
-    plt.ylabel("Voltage [V]", size=18)    # y軸指定
+    df.plot()
+    plt.tick_params(labelsize=28)
+    plt.xlabel("Time [s]", size=24)  # x軸指定
+    plt.ylabel("Voltage [V]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def current_plot(df : pd.DataFrame):
-    df.plot()    
-    plt.xlabel("Time [s]", size=18)  # x軸指定
-    plt.ylabel("Current [A]", size=18)    # y軸指定
+    df.plot()
+    plt.tick_params(labelsize=28)
+    plt.xlabel("Time [s]", size=24)  # x軸指定
+    plt.ylabel("Current [A]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def sim_plot(df : pd.DataFrame):
