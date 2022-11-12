@@ -5,10 +5,21 @@ import math
 # ----- Matplotlib の rc 設定 ----
 config = {
     "font.size":20,
-    "axes.grid":True,
+    "axes.xmargin" : 0,
+    # "axes.grid":True,
+    "axes.linewidth": 3,
+    # "grid.linewidth": 3,
     "figure.figsize":[10.0, 7.0],
     "legend.fontsize": 18,
     "lines.linewidth": 3,
+    "xtick.direction" : "in",
+    "ytick.direction" : "in",
+    "xtick.major.pad" : 10,
+    "ytick.major.pad" : 10,
+    "xtick.major.size" : 7,
+    "ytick.major.size" : 7,
+    "xtick.major.width" : 3,
+    "ytick.major.width" : 3
     #"font.family": "Times New Roman",
     #"axes.unicode_minus": False
 }
@@ -25,7 +36,7 @@ def phase_plot(df : pd.DataFrame):
         y_list.append(val*math.pi)
         y_list_str.append(str(val)+"π")
         val += 2
-    plt.xlim(left = 0)
+
     plt.yticks(y_list, y_list_str)
     plt.tick_params(labelsize=28)
     plt.xlabel("Time [s]", size=32)  # x軸指定
@@ -89,14 +100,14 @@ def margin_plot(margins : pd.DataFrame, filename = None):
     # 分割した 0 グラフ
     axes[0].barh(index, column0, align='center', color=index_color)
     axes[0].set_xlim(-100, 0)
-    axes[0].grid(axis='y')
+    # axes[0].grid(axis='y')
 
 
     # 分割した 1 グラフ
     axes[1].barh(index, column1, align='center', color=index_color)
     axes[1].set_xlim(0, 100)
     axes[1].tick_params(axis='y', colors=plot_color)  # 1 グラフのメモリ軸の色をプロットの色と合わせて見れなくする
-    axes[1].grid(axis='y')
+    # axes[1].grid(axis='y')
 
 
     if filename != None:
