@@ -4,7 +4,6 @@ import re
 import math
 # ----- Matplotlib の rc 設定 ----
 config = {
-    "font.serif": "Times New Roman",
     "font.size":20,
     "axes.xmargin" : 0,
     # "axes.grid":True,
@@ -29,6 +28,7 @@ plt.rcParams['font.family'] = 'DeJavu Serif'
 plt.rcParams['font.serif'] = ['Times New Roman']
 
 def phase_plot(df : pd.DataFrame):
+    df.index = df.index * 10**12
     df.plot()
     max_y = df.max().max()
     val = 0
@@ -41,21 +41,21 @@ def phase_plot(df : pd.DataFrame):
 
     plt.yticks(y_list, y_list_str)
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [s]", size=32)  # x軸指定
+    plt.xlabel("Time [ps]", size=32)  # x軸指定
     plt.ylabel("Phase difference [rad]", size=32)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def voltage_plot(df : pd.DataFrame):
     df.plot()
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [s]", size=24)  # x軸指定
+    plt.xlabel("Time [ps]", size=24)  # x軸指定
     plt.ylabel("Voltage [V]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
 def current_plot(df : pd.DataFrame):
     df.plot()
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [s]", size=24)  # x軸指定
+    plt.xlabel("Time [ps]", size=24)  # x軸指定
     plt.ylabel("Current [A]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
