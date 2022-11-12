@@ -5,7 +5,7 @@ from .config import Config
 import matplotlib.pyplot as plt
 from .graph import sim_plot
 
-def get_switch_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.DataFrame:
+def get_switch_timing(config : Config, data : pd.DataFrame, plot = False, timescale = "ps", blackstyle = False) -> pd.DataFrame:
 
     p = math.pi
     p2 = math.pi * 2
@@ -23,7 +23,7 @@ def get_switch_timing(config : Config, data : pd.DataFrame, plot = False) -> pd.
                 new_df['P('+'+'.join(squid)+')'] = data['P('+squid[0].upper()+')'] + data['P('+squid[1].upper()+')'] + data['P('+squid[2].upper()+')']
     
         if plot:
-            sim_plot(new_df)
+            sim_plot(new_df, timescale, blackstyle)
 
         for column_name, srs in new_df.items():
             # バイアスをかけた時の状態の位相(初期位相)

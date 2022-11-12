@@ -162,13 +162,13 @@ class Data:
             sim_plot(df)
         return df
 
-    def get_base_switch_timing(self,  plot = True):
+    def get_base_switch_timing(self,  plot = True, timescale = "ps", blackstyle = False):
         print("Simulate with default values.")
 
         df = self.__data_sim(self.vdf['def'])
         if plot:
-            sim_plot(df)
-        self.base_switch_timing = get_switch_timing(self.conf, df, plot)
+            sim_plot(df, timescale, blackstyle)
+        self.base_switch_timing = get_switch_timing(self.conf, df, plot, timescale, blackstyle)
         return self.base_switch_timing
 
     def __data_sim(self, parameters : pd.Series) -> pd.DataFrame:
@@ -213,7 +213,7 @@ class Data:
         return (min_ele, min_margin)
 
     # Use parameters of vdf['sub']
-    def get_margins(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+    def get_margins(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, blackstyle : bool = False, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
         if self.base_switch_timing == None:
             print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
             sys.exit()
@@ -249,7 +249,16 @@ class Data:
 
         # plot     
         if plot:
-            margin_plot(margin_result)
+            min_margin = 100
+            min_ele = None
+            for element in margin_result.index:
+                if not self.vdf.at[element,'fix']:
+                    # 最小マージンの素子を探す。
+                    if abs(margin_result.at[element,'low(%)']) < min_margin or abs(margin_result.at[element,'high(%)']) < min_margin:
+                        min_margin = vaild_number(min(abs(margin_result.at[element,'low(%)']), abs(margin_result.at[element,'high(%)'])), 4)
+                        min_ele = element
+
+            margin_plot(margin_result, min_ele, blackstyle = blackstyle)
 
         return margin_result
 

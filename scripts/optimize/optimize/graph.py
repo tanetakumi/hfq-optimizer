@@ -27,9 +27,16 @@ plt.rcParams.update(config)
 plt.rcParams['font.family'] = 'DeJavu Serif'
 plt.rcParams['font.serif'] = ['Times New Roman']
 
-def phase_plot(df : pd.DataFrame):
-    df.index = df.index * 10**12
-    df.plot()
+linestyle = ['-','--',  '-.', ':']
+
+
+def phase_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
+    df.index = df.index * time_multi
+    if blackstyle:
+        df.plot(style=linestyle, color='black')
+    else:
+        df.plot()
+
     max_y = df.max().max()
     val = 0
     y_list = []
@@ -41,42 +48,67 @@ def phase_plot(df : pd.DataFrame):
 
     plt.yticks(y_list, y_list_str)
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [ps]", size=32)  # x軸指定
-    plt.ylabel("Phase difference [rad]", size=32)    # y軸指定
+    plt.xlabel("Time ["+time_axis+"]", size=32)  # x軸指定
+    plt.ylabel("Phase difference", size=32)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    
 
-def voltage_plot(df : pd.DataFrame):
-    df.plot()
+def voltage_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
+    df.index = df.index * time_multi
+    if blackstyle:
+        df.plot(style=linestyle, color='black')
+    else:
+        df.plot()
+
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [ps]", size=24)  # x軸指定
+    plt.xlabel("Time ["+time_axis+"]", size=24)  # x軸指定
     plt.ylabel("Voltage [V]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
-def current_plot(df : pd.DataFrame):
-    df.plot()
+def current_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
+    df.index = df.index * time_multi
+    if blackstyle:
+        df.plot(style=linestyle, color='black')
+    else:
+        df.plot()
+
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time [ps]", size=24)  # x軸指定
+    plt.xlabel("Time ["+time_axis+"]", size=24)  # x軸指定
     plt.ylabel("Current [A]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
-def sim_plot(df : pd.DataFrame):
+def sim_plot(df : pd.DataFrame, timescale_inp : str = "ps", blackstyle : bool = False):
+    time_multi = 10**12
+    if timescale_inp == "ns":
+        time_multi = 10**9
+    elif timescale_inp == "us":
+        time_multi = 10**6
+    elif timescale_inp == "ms":
+        time_multi = 10**3
+    elif timescale_inp == "s":
+        time_multi = 1
+
     l = df.columns
     phase_list = list(filter(lambda s: re.search('P\(.+\)',s, flags=re.IGNORECASE), l))
     if not phase_list == []:
-        phase_plot(df.filter(items=phase_list))    
+        phase_plot(df.filter(items=phase_list), time_multi, timescale_inp, blackstyle)    
 
     voltage_list = list(filter(lambda s: re.search('V\(.+\)',s, flags=re.IGNORECASE), l))
     if not voltage_list == []:
-        voltage_plot(df.filter(items=voltage_list))
+        voltage_plot(df.filter(items=voltage_list), time_multi, timescale_inp, blackstyle)
         
     current_list = list(filter(lambda s: re.search('I\(.+\)',s, flags=re.IGNORECASE), l))
     if not current_list == []:
-        current_plot(df.filter(items=current_list))
+        current_plot(df.filter(items=current_list), time_multi, timescale_inp, blackstyle)
 
 
-def margin_plot(margins : pd.DataFrame, filename = None):
+def margin_plot(margins : pd.DataFrame, critical_ele : str, filename = None, blackstyle : bool = False):
     # バーのcolor
     plot_color = '#01b8aa'
+
+    if blackstyle:
+        plot_color = "gray"
+
 
     df = margins.sort_index()
     index = df.index
@@ -84,29 +116,29 @@ def margin_plot(margins : pd.DataFrame, filename = None):
     column1 = df['high(%)']
 
     # --- biasのカラーを変更したリスト ---
-    index_color = []
+    hatch_list = []
     for i in index:
-        if re.search('bias|Vb',i,flags=re.IGNORECASE):
-            index_color.append('red')
+        if i == critical_ele:
+            hatch_list.append("///")
         else:
-            index_color.append(plot_color)
+            hatch_list.append("0")
     # ------
 
     # 図のサイズ　sharey:グラフの軸の共有(y軸)
-    fig, axes = plt.subplots(figsize=(10, len(index)/2.5), ncols=2, sharey=True)
+    fig, axes = plt.subplots(figsize=(10, len(index)/2), ncols=2, sharey=True)
     plt.subplots_adjust(wspace=0)
-    fig.suptitle("Margins", y=1.1)
-    axes[0].set_ylabel("Elements", fontsize=20)
-    axes[1].set_xlabel("%", fontsize=20)
+    fig.suptitle("Margins[%]", x=0.5, y=-0.15)
+    # axes[0].set_ylabel("Elements", fontsize=20)
+    # axes[1].set_xlabel("Margin[%]", fontsize=20)
 
     # 分割した 0 グラフ
-    axes[0].barh(index, column0, align='center', color=index_color)
+    axes[0].barh(index, column0, align='center', color=plot_color, hatch = hatch_list)
     axes[0].set_xlim(-100, 0)
     # axes[0].grid(axis='y')
 
 
     # 分割した 1 グラフ
-    axes[1].barh(index, column1, align='center', color=index_color)
+    axes[1].barh(index, column1, align='center', color=plot_color, hatch = hatch_list)
     axes[1].set_xlim(0, 100)
     axes[1].tick_params(axis='y', colors=plot_color)  # 1 グラフのメモリ軸の色をプロットの色と合わせて見れなくする
     # axes[1].grid(axis='y')
