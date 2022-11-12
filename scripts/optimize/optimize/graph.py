@@ -4,6 +4,7 @@ import re
 import math
 # ----- Matplotlib の rc 設定 ----
 config = {
+    "font.serif": "Times New Roman",
     "font.size":20,
     "axes.xmargin" : 0,
     # "axes.grid":True,
@@ -19,12 +20,13 @@ config = {
     "xtick.major.size" : 7,
     "ytick.major.size" : 7,
     "xtick.major.width" : 3,
-    "ytick.major.width" : 3
-    #"font.family": "Times New Roman",
-    #"axes.unicode_minus": False
+    "ytick.major.width" : 3,
+    "axes.unicode_minus": False
 }
 plt.rcParams.update(config)
-
+# よくわからないがこれで Times New Roman が使える
+plt.rcParams['font.family'] = 'DeJavu Serif'
+plt.rcParams['font.serif'] = ['Times New Roman']
 
 def phase_plot(df : pd.DataFrame):
     df.plot()
