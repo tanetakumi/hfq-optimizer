@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="optimize", # これがパッケージ名になります～
-    version="0.0.1",
+    name="hfqco", # これがパッケージ名になります～
+    version="1.0.0",
     packages=find_packages(),
     install_requires=[
         "pandas",
@@ -12,7 +12,8 @@ setup(
         "tqdm"
     ],
     author="tanetakumi",
-    description="Optimize the circuits containing pi-josephoson junction",
-    url="https://github.com/tanetakumi/",
+    description="Optimizer of half flux quantum circuits composed of π-shift and conventional Josephson junctions",
+    url="https://github.com/tanetakumi/hfqco",
     python_requires='>=3.8',
 )
+
