@@ -30,76 +30,54 @@ plt.rcParams['font.serif'] = ['Times New Roman']
 linestyle = ['-','--',  '-.', ':']
 
 
-def phase_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
-    df.index = df.index * time_multi
-    if blackstyle:
-        df.plot(style=linestyle, color='black')
-    else:
-        df.plot()
-
-    max_y = df.max().max()
-    val = 0
-    y_list = []
-    y_list_str = []
-    while (val-2)*math.pi < max_y:
-        y_list.append(val*math.pi)
-        y_list_str.append(str(val)+"π")
-        val += 2
-
-    plt.yticks(y_list, y_list_str)
-    plt.tick_params(labelsize=28)
-    plt.xlabel("Time ["+time_axis+"]", size=32)  # x軸指定
-    plt.ylabel("Phase difference", size=32)    # y軸指定
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+def time_graph(df : pd.DataFrame, ylabel : str, y_axis : str = "", x_axis : str = "", blackstyle : bool = False):
+    x_multi = 1
+    if x_axis[0] == "m":
+        x_multi = 10**3
+    elif x_axis[0] == "u":
+        x_multi = 10**6
+    elif x_axis[0] == "n":
+        x_multi = 10**9
+    elif x_axis[0] == "p":
+        x_multi = 10**12
     
+    y_multi = 1
+    if len(y_axis) > 0:
+        if y_axis[0] == "m":
+            y_multi = 10**3
+        elif y_axis[0] == "u":
+            y_multi = 10**6
+        elif y_axis[0] == "n":
+            y_multi = 10**9
+        elif y_axis[0] == "p":
+            y_multi = 10**12
 
-def voltage_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
-    df.index = df.index * time_multi
+    df.index = df.index * x_multi
+    df = df * y_multi
     if blackstyle:
         df.plot(style=linestyle, color='black')
     else:
         df.plot()
 
     plt.tick_params(labelsize=28)
-    plt.xlabel("Time ["+time_axis+"]", size=24)  # x軸指定
-    plt.ylabel("Voltage [V]", size=24)    # y軸指定
+    plt.xlabel("Time ["+x_axis+"]", size=24)  # x軸指定
+    plt.ylabel(ylabel+" ["+y_axis+"]", size=24)    # y軸指定
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
-def current_plot(df : pd.DataFrame, time_multi : int, time_axis : str, blackstyle : bool):
-    df.index = df.index * time_multi
-    if blackstyle:
-        df.plot(style=linestyle, color='black')
-    else:
-        df.plot()
-
-    plt.tick_params(labelsize=28)
-    plt.xlabel("Time ["+time_axis+"]", size=24)  # x軸指定
-    plt.ylabel("Current [A]", size=24)    # y軸指定
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-
-def sim_plot(df : pd.DataFrame, timescale_inp : str = "ps", blackstyle : bool = False):
-    time_multi = 10**12
-    if timescale_inp == "ns":
-        time_multi = 10**9
-    elif timescale_inp == "us":
-        time_multi = 10**6
-    elif timescale_inp == "ms":
-        time_multi = 10**3
-    elif timescale_inp == "s":
-        time_multi = 1
+def sim_plot(df : pd.DataFrame, timescale : str = "ps", blackstyle : bool = False):
 
     l = df.columns
     phase_list = list(filter(lambda s: re.search('P\(.+\)',s, flags=re.IGNORECASE), l))
     if not phase_list == []:
-        phase_plot(df.filter(items=phase_list), time_multi, timescale_inp, blackstyle)    
+        time_graph(df.filter(items=phase_list),ylabel="Phase difference",y_axis="rad",x_axis=timescale)
 
     voltage_list = list(filter(lambda s: re.search('V\(.+\)',s, flags=re.IGNORECASE), l))
     if not voltage_list == []:
-        voltage_plot(df.filter(items=voltage_list), time_multi, timescale_inp, blackstyle)
+        time_graph(df.filter(items=voltage_list),ylabel="Voltage",y_axis="mV",x_axis=timescale)
         
     current_list = list(filter(lambda s: re.search('I\(.+\)',s, flags=re.IGNORECASE), l))
     if not current_list == []:
-        current_plot(df.filter(items=current_list), time_multi, timescale_inp, blackstyle)
+        time_graph(df.filter(items=current_list),ylabel="Current",y_axis="uA",x_axis=timescale)
 
 
 def margin_plot(margins : pd.DataFrame, critical_ele : str, filename = None, blackstyle : bool = False):

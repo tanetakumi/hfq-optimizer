@@ -37,4 +37,5 @@ class Config:
         
         self.phase_ele = config_data["phase.ele"]
         self.voltage_ele = config_data["voltage.ele"]
+        print(self.voltage_ele)
         self.allow_multi_swithes = config_data["allow.multi.swithes"]

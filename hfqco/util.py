@@ -28,8 +28,6 @@ def stringToNum(s):
     else:
         raise ValueError("値が数値ではありません。")
 
-
-
 def vaild_number(x, num):
     if x == 0:
         return 0

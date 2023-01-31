@@ -8,6 +8,7 @@ from .config import Config
 from .calculator import shunt_calc, rand_norm
 from .graph import margin_plot, sim_plot
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor
 import concurrent.futures
 import copy
 import os
@@ -31,6 +32,8 @@ class Data:
         # Base switch timing
         self.base_switch_timing = None
 
+    def set_base_switch_timing(self, switch_timing):
+        self.base_switch_timing = switch_timing
 
     def __get_variable(self, raw : str) -> tuple:
         df = pd.DataFrame()
@@ -154,9 +157,12 @@ class Data:
 
     def data_simulation(self,  plot = True):
         copied_sim_data = self.raw_sim_data
-        parameters : pd.Series =  self.vdf['def']
-        for index in parameters.index:
-            copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameters[index]))
+
+        if not self.vdf.empty:
+            parameters : pd.Series =  self.vdf['def']
+            for index in parameters.index:
+                copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameters[index]))
+                
         df = simulation(copied_sim_data)
         if plot:
             sim_plot(df)
@@ -171,6 +177,13 @@ class Data:
         self.base_switch_timing = get_switch_timing(self.conf, df, plot, timescale, blackstyle)
         return self.base_switch_timing
 
+    def public_sim(self, parameters : pd.Series) -> pd.DataFrame:
+        copied_sim_data = self.raw_sim_data
+        for index in parameters.index:
+            copied_sim_data = copied_sim_data.replace('#('+index+')', str(parameters[index]))
+        df = simulation(copied_sim_data)
+        return df
+
     def __data_sim(self, parameters : pd.Series) -> pd.DataFrame:
         copied_sim_data = self.sim_data
         for index in parameters.index:
@@ -183,6 +196,34 @@ class Data:
         res = get_switch_timing(self.conf, self.__data_sim(parameters))
         return compare_switch_timings(res, self.base_switch_timing, self.conf)
 
+    def __operation_judge_2(self, parameters : pd.Series, num : int):
+        res = get_switch_timing(self.conf, self.__data_sim(parameters))
+        return (compare_switch_timings(res, self.base_switch_timing, self.conf),num)
+
+
+    def custom_opera_judge(self, res_df : pd.DataFrame):
+        param = copy.deepcopy(self.vdf['def'])
+        
+        # tqdmで経過が知りたい時
+        with tqdm(total=len(res_df)) as progress:
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+               
+                for num, srs in res_df.iterrows():
+                    # 値の書き換え
+                    for colum, value in srs.items():
+                        if not colum == 'param':
+                            param[colum] = value
+
+                    inp = copy.deepcopy(param)
+                    future = executor.submit(self.__operation_judge_2, inp, num)
+                    future.add_done_callback(lambda p: progress.update()) # tqdmで経過が知りたい時
+                    futures.append(future)
+
+            for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+                res : tuple = future.result()
+                res_df.at[res[1],'opera'] = res[0]
+        return res_df
 
     def custom_simulation(self, res_df : pd.DataFrame):
         param = copy.deepcopy(self.vdf['def'])
@@ -195,10 +236,37 @@ class Data:
                 if not colum == 'param':
                     param[colum] = value
 
+            
             res_df.at[num,'margin'] = self.get_critical_margin(param = param)[1]
         return res_df
+    
+    def custom_simulation_async(self, res_df : pd.DataFrame):
+        param = copy.deepcopy(self.vdf['def'])
+        
+        # tqdmで経過が知りたい時
+        with tqdm(total=len(res_df)) as progress:
+            futures = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
+               
+                for num, srs in res_df.iterrows():
+                    # 値の書き換え
+                    for colum, value in srs.items():
+                        if not colum == 'param':
+                            param[colum] = value
 
-    def get_critical_margin(self, param : pd.Series = pd.Series(dtype='float64')) -> tuple:
+                    inp = copy.deepcopy(param)
+                    future = executor.submit(self.get_critical_margin_sync, num, inp)
+                    future.add_done_callback(lambda p: progress.update()) # tqdmで経過が知りたい時
+                    futures.append(future)
+
+        for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+            res : tuple = future.result()
+            res_df.at[res[0],'min_ele'] = res[1]
+            res_df.at[res[0],'min_margin'] = res[2]
+
+        return res_df
+
+    def get_critical_margin(self,  param : pd.Series = pd.Series(dtype='float64')) -> tuple:
         margins = self.get_margins(param = param, plot=False)
         
         min_margin = 100
@@ -212,8 +280,21 @@ class Data:
         
         return (min_ele, min_margin)
 
-    # Use parameters of vdf['sub']
-    def get_margins(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, blackstyle : bool = False, accuracy : int = 8, thread : int = 16) -> pd.DataFrame:
+    def get_critical_margin_sync(self,num : int, param : pd.Series = pd.Series(dtype='float64')) -> tuple:
+        margins = self.get_margins_sync(param = param, plot=False)
+        
+        min_margin = 100
+        min_ele = None
+        for element in margins.index:
+            if not self.vdf.at[element,'fix']:
+                # 最小マージンの素子を探す。
+                if abs(margins.at[element,'low(%)']) < min_margin or abs(margins.at[element,'high(%)']) < min_margin:
+                    min_margin = vaild_number(min(abs(margins.at[element,'low(%)']), abs(margins.at[element,'high(%)'])), 4)
+                    min_ele = element
+        
+        return (num, min_ele, min_margin)
+
+    def get_margins_sync(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, blackstyle : bool = False, accuracy : int = 8) -> pd.DataFrame:
         if self.base_switch_timing == None:
             print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
             sys.exit()
@@ -234,18 +315,58 @@ class Data:
                 margin_result.loc[index] = 0
 
         else:
-            futures = []
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=thread) as executor:
-                for index in self.vdf.index:
-                    future = executor.submit(self.__get_margin, param, index, accuracy)
-                    futures.append(future)
-            
-            for future in concurrent.futures.as_completed(futures):
-                # 結果を受け取り
-                result_dic= future.result()
-                # variables dataframeに追加
+            for index in self.vdf.index:
+                result_dic= self.__get_margin(param, index, accuracy)
                 margin_result.loc[result_dic["index"]] = result_dic["result"]
+
+        # plot     
+        if plot:
+            min_margin = 100
+            min_ele = None
+            for element in margin_result.index:
+                if not self.vdf.at[element,'fix']:
+                    # 最小マージンの素子を探す。
+                    if abs(margin_result.at[element,'low(%)']) < min_margin or abs(margin_result.at[element,'high(%)']) < min_margin:
+                        min_margin = vaild_number(min(abs(margin_result.at[element,'low(%)']), abs(margin_result.at[element,'high(%)'])), 4)
+                        min_ele = element
+
+            margin_plot(margin_result, min_ele, blackstyle = blackstyle)
+
+        return margin_result
+
+
+    def get_margins(self, param : pd.Series = pd.Series(dtype='float64'), plot : bool = True, blackstyle : bool = False, accuracy : int = 8, thread : int = 128) -> pd.DataFrame:
+        if self.base_switch_timing == None:
+            print("\033[31mFirst, you must get the base switch timing.\nPlease use 'get_base_switch_timing()' method before getting the margin.\033[0m")
+            sys.exit()
+        
+        # print(param)
+        if param.empty:
+            print("Using default parameters")
+            param = self.vdf['def']
+
+        # result を受け取る dataframe
+        margin_result = pd.DataFrame(columns = ['low(value)', 'low(%)', 'high(value)', 'high(%)'])
+
+        # 0%の値は動くか確認
+        if not self.__operation_judge(param):
+            for index in self.vdf.index:
+                margin_result.loc[index] = 0
+
+        else:
+            with tqdm(total=len(self.vdf)) as progress:
+                futures = []
+                with concurrent.futures.ThreadPoolExecutor(max_workers=thread) as executor:
+                    for index in self.vdf.index:
+                        future = executor.submit(self.__get_margin, param, index, accuracy)
+                        future.add_done_callback(lambda p: progress.update()) # tqdmで経過が知りたい時
+                        futures.append(future)
+                
+                for future in tqdm(concurrent.futures.as_completed(futures), total=len(futures)):
+                    # 結果を受け取り
+                    result_dic= future.result()
+                    # variables dataframeに追加
+                    margin_result.loc[result_dic["index"]] = result_dic["result"]
 
         # plot     
         if plot:
@@ -326,8 +447,6 @@ class Data:
         diff_margin_parcentage = 0.2
         loop1_count = l1c
         loop2_count = l2c
-
-
 
         # directory の処理
         if os.path.exists(directory):
